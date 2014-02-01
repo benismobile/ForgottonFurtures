@@ -1,4 +1,4 @@
-package com.example.android.audio ;
+package com.example.android.location ;
 
 import android.app.Service ;
 import android.media.MediaPlayer ;

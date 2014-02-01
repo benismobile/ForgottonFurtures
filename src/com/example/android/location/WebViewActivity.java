@@ -31,7 +31,7 @@ import android.media.AudioManager;
 import android.media.SoundPool.OnLoadCompleteListener;
 import android.media.MediaPlayer ;
 import android.media.MediaPlayer.OnPreparedListener;
-
+import android.content.ComponentName;
 import android.text.format.DateUtils;
 import com.example.android.geofence.GeofenceUtils.REMOVE_TYPE;
 import com.example.android.geofence.GeofenceUtils.REQUEST_TYPE;
@@ -40,8 +40,12 @@ import com.example.android.geofence.GeofenceRequester;
 import com.example.android.geofence.SimpleGeofenceStore;
 import com.example.android.geofence.SimpleGeofence;
 import com.example.android.geofence.GeofenceUtils;
+import com.example.android.location.BackgroundAudioService ;
+import android.content.ServiceConnection ;
+
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.LocationClient.OnAddGeofencesResultListener;
+
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,6 +117,38 @@ implements
    private HashSet mSoundLoadedMap ;
    private MediaPlayer mPlayer ;  
    private MediaPlayer mPlayer2 ;  
+   private boolean mBackgroundAudioServiceRunning = false ;
+   private BackgroundAudioService mBackgroundAudioService ;
+   private boolean mIsBound = false ;
+
+   private ServiceConnection mConnection = new ServiceConnection() {
+      public void onServiceConnected(ComponentName className, IBinder service) {
+        // This is called when the connection with the service has been
+        // established, giving us the service object we can use to
+        // interact with the service.  Because we have bound to a explicit
+        // service that we know is running in our own process, we can
+        // cast its IBinder to a concrete class and directly access it.
+        mBackgroundAudioService = ((BackgroundAudioService.LocalBinder) service).getService();
+
+        // Tell the user about this for our demo.
+        Toast.makeText(WebViewActivity.this, "Connected to BackgroundAudioService",
+                Toast.LENGTH_SHORT).show();
+    }
+
+      public void onServiceDisconnected(ComponentName className) {
+        // This is called when the connection with the service has been
+        // unexpectedly disconnected -- that is, its process crashed.
+        // Because it is running in our same process, we should never
+        // see this happen.
+        mBackgroundAudioService = null;
+        Toast.makeText(WebViewActivity.this, "Disconnected Unexpectedly fron BackgroundAudioService",
+                Toast.LENGTH_SHORT).show();
+    }
+   };
+
+
+
+
 
    @SuppressLint("NewApi")
    @Override
@@ -214,6 +250,10 @@ implements
 	mPlayer =  MediaPlayer.create(this, R.raw.factory) ;
 	mPlayer2 = MediaPlayer.create(this, R.raw.sleepaway) ;
       
+     	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
+        bindService(startAudioIntent, mConnection, Context.BIND_AUTO_CREATE);
+        mIsBound = true;
+
 
    } // ends onCreate
 
@@ -223,6 +263,19 @@ implements
 	player.start() ;
 
    }
+
+
+   @Override
+   protected void onDestroy() {
+    super.onDestroy();
+     if (mIsBound) {
+        // Detach our existing connection.
+        unbindService(mConnection);
+        mIsBound = false;
+    }
+
+  }
+  
 
    @Override
    public void onStop() {
@@ -430,20 +483,35 @@ public void framemarkers()
     @Override
     public void onLocationChanged(Location location) {
 
- // Toast.makeText(this,"Android.onLocationChanged",Toast.LENGTH_SHORT).show();
-
-
-
-	 // Display the current location in the UI
+      // Display the current location in the UI
        String latlon = LocationUtils.getLatLngJSON(this, location);
-
-
 
      // call javascript method to update location
      webview.loadUrl("javascript:onLocationUpdateP('" + latlon +"');");
-     // TODO change volume of stream according to location
-       //  mSoundPool.setVolume(1, 0.2f, 0.2f) ;
+    
+     
+      
 
+     /*
+     
+     if(!mBackgroundAudioServiceRunning)
+     {
+     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: startAudioService" ) ;
+     	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
+     	// startAudioIntent.putExtra(BackgroundAudioService.EXTRA_TRACK, R.raw.factory) ;
+     	startAudioIntent.setAction(BackgroundAudioService.ACTION_PLAY) ;
+	this.startService(startAudioIntent) ;
+     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: startedAudioService" ) ;
+	mBackgroundAudioServiceRunning = true ;
+     }
+
+
+     */
+
+
+
+    // TODO change volume of stream according to location
+/*
       if(!mPlayer.isPlaying())
       {
 	mPlayer.start() ;
@@ -467,7 +535,7 @@ public void framemarkers()
       {
         mPlayer2.start() ;
       }
-
+*/
   /*
         
         if(mSoundLoadedMap.contains(new Integer(1)))
