@@ -65,10 +65,9 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     @Override
     public void onDestroy() {
         // Cancel the persistent notification.
-        // mNM.cancel(NOTIFICATION);
         stopForeground(true) ; 
-        // Tell the user we stopped.
-        // Toast.makeText(this, R.string.audio_service_stopped, Toast.LENGTH_SHORT).show();
+        mMediaPlayer.stop() ;
+	mMediaPlayer.release() ;
     }
 
     @Override
@@ -93,6 +92,18 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
         notification.setLatestEventInfo(getApplicationContext(), "forgotton futures",
                 "Playing: " + track, pi);
         startForeground(1571, notification);
+
+    }
+
+
+    public void play()
+    {
+        
+        if(! mMediaPlayer.isPlaying())
+	{
+           mMediaPlayer = MediaPlayer.create(this, R.raw.factory) ; 
+	   mMediaPlayer.start() ;
+	}
 
     }
 

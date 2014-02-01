@@ -121,7 +121,7 @@ implements
    private BackgroundAudioService mBackgroundAudioService ;
    private boolean mIsBound = false ;
 
-   private ServiceConnection mConnection = new ServiceConnection() {
+   private ServiceConnection mBackgroundAudioServiceConnection = new ServiceConnection() {
       public void onServiceConnected(ComponentName className, IBinder service) {
         // This is called when the connection with the service has been
         // established, giving us the service object we can use to
@@ -129,10 +129,10 @@ implements
         // service that we know is running in our own process, we can
         // cast its IBinder to a concrete class and directly access it.
         mBackgroundAudioService = ((BackgroundAudioService.LocalBinder) service).getService();
-
+        mIsBound = true ;
         // Tell the user about this for our demo.
-        Toast.makeText(WebViewActivity.this, "Connected to BackgroundAudioService",
-                Toast.LENGTH_SHORT).show();
+        Log.d( GeofenceUtils.APPTAG, "Connected to BackgroundAudioService") ;
+        
     }
 
       public void onServiceDisconnected(ComponentName className) {
@@ -141,8 +141,8 @@ implements
         // Because it is running in our same process, we should never
         // see this happen.
         mBackgroundAudioService = null;
-        Toast.makeText(WebViewActivity.this, "Disconnected Unexpectedly fron BackgroundAudioService",
-                Toast.LENGTH_SHORT).show();
+	mIsBound = false ;
+	Log.e(GeofenceUtils.APPTAG, "Disconnected from BackgroundAudioService ERROR") ;
     }
    };
 
@@ -251,8 +251,8 @@ implements
 	mPlayer2 = MediaPlayer.create(this, R.raw.sleepaway) ;
       
      	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
-        bindService(startAudioIntent, mConnection, Context.BIND_AUTO_CREATE);
-        mIsBound = true;
+     	// startAudioIntent.setAction(BackgroundAudioService.ACTION_PLAY) ;
+        bindService(startAudioIntent, mBackgroundAudioServiceConnection, Context.BIND_AUTO_CREATE);
 
 
    } // ends onCreate
@@ -270,7 +270,7 @@ implements
     super.onDestroy();
      if (mIsBound) {
         // Detach our existing connection.
-        unbindService(mConnection);
+        unbindService(mBackgroundAudioServiceConnection);
         mIsBound = false;
     }
 
@@ -490,7 +490,12 @@ public void framemarkers()
      webview.loadUrl("javascript:onLocationUpdateP('" + latlon +"');");
     
      
-      
+     if(mIsBound)
+     {
+
+     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
+        mBackgroundAudioService.play() ;
+     }
 
      /*
      
