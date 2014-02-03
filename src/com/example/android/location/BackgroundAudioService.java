@@ -99,9 +99,9 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     public void play()
     {
         
+         mMediaPlayer = MediaPlayer.create(this, R.raw.factory) ; 
         if(! mMediaPlayer.isPlaying())
 	{
-           mMediaPlayer = MediaPlayer.create(this, R.raw.factory) ; 
 	   mMediaPlayer.start() ;
 	}
 

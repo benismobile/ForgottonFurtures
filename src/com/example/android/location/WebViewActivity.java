@@ -52,12 +52,30 @@ import java.util.Collections;
 import java.util.HashMap ;
 import java.util.HashSet ;
 import java.util.List;
+import java.io.InputStream ;
+import java.lang.StringBuilder ;
+import java.io.BufferedReader ;
+import java.io.InputStreamReader ;
+
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.format.Time ;
 import com.example.android.geofence.GeofenceDialogFragment ;
 import android.app.FragmentManager ;
+
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.client.methods.HttpPost ;
+import org.apache.http.HttpResponse ;
+import org.apache.http.HttpEntity;
+import org.apache.http.params.BasicHttpParams ;
+import org.json.JSONObject ;
+import org.json.JSONArray ;
+import org.json.JSONException ;
+import android.net.ConnectivityManager ;
+import android.net.NetworkInfo ;
+import android.os.AsyncTask ;
+import java.io.IOException ;
 
 
 public class WebViewActivity extends ActionBarActivity
@@ -494,7 +512,12 @@ public void framemarkers()
      {
 
      	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
-        mBackgroundAudioService.play() ;
+        if(mBackgroundAudioService!=null)
+	{ 
+	        mBackgroundAudioService.play() ;
+		Log.d(GeofenceUtils.APPTAG, "play audio");
+	}
+	
      }
 
      /*
@@ -588,7 +611,7 @@ private boolean servicesConnected() {
 	   }
 
 
-Toast.makeText(this, "Google Play Services NotAvailable",  Toast.LENGTH_SHORT).show();
+	Toast.makeText(this, "Google Play Services NotAvailable",  Toast.LENGTH_SHORT).show();
 
 	return false;
 
@@ -596,20 +619,85 @@ Toast.makeText(this, "Google Play Services NotAvailable",  Toast.LENGTH_SHORT).s
 
     @Override
     public void onConnected(Bundle dataBundle)
-    {
+    {																								
        Toast.makeText(this, "WebViewActivity On Connected: " + mUpdatesRequested,Toast.LENGTH_SHORT).show();
        if(mUpdatesRequested)
        {
           startPeriodicUpdates() ;
        }
 
-      Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected " + mCurrentGeofences ) ;
-      if(mCurrentGeofences != null && mCurrentGeofences.size() == 0)
-      {
-      	mRequestType = GeofenceUtils.REQUEST_TYPE.ADD;
-	Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected: adding gfs") ;
-       Toast.makeText(this, "WebViewActivity OnConnected: adding gfs"  ,Toast.LENGTH_SHORT).show();
-      	mGeofence1 = new SimpleGeofence(
+      	Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected " + mCurrentGeofences ) ;
+       if(mCurrentGeofences != null && mCurrentGeofences.size() == 0)
+       {
+      		mRequestType = GeofenceUtils.REQUEST_TYPE.ADD;
+		Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected: adding gfs") ;
+       		Toast.makeText(this, "WebViewActivity OnConnected: adding gfs"  ,Toast.LENGTH_SHORT).show();
+     
+
+        	ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        	NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        
+		if (networkInfo != null && networkInfo.isConnected()) 
+		{
+	
+           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/backgrounds.json");
+        	} 
+		else 
+		{
+          		// TODO Toast
+	   		Log.e(GeofenceUtils.APPTAG, "No network connection available.");
+        	}
+
+        }
+
+      }
+	
+     private void addBackgroundGeofences(String backgroundJSONStr)
+     {
+
+	if(backgroundJSONStr == null) return ;
+        JSONArray jArray = null ;
+        Log.d(GeofenceUtils.APPTAG, "adding BackgroundGeofences: " + backgroundJSONStr) ;
+
+    	try {
+
+        	JSONObject jBackgrounds = new JSONObject(backgroundJSONStr);	
+	
+        	jArray = jBackgrounds.getJSONArray("backgrounds");
+
+    	}catch (JSONException e) 
+	{
+		Log.e(GeofenceUtils.APPTAG, "Error parsing background JSON Str"+ e) ;
+		return ;
+
+	}
+
+	for (int i=0; i < jArray.length(); i++)
+	{
+                JSONObject backgroundObject = null;
+	        JSONObject geofenceAudioObject = null;
+
+    		try {
+        		backgroundObject = jArray.getJSONObject(i);
+                   
+			geofenceAudioObject = backgroundObject.getJSONObject("geofence_audio");  
+        		// Pulling items from the array
+			if(geofenceAudioObject!=null)
+			{ // tag geofence_audio
+        			int id = geofenceAudioObject.getInt("id");
+        			double lat = geofenceAudioObject.getDouble("lat");
+		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id + " lat: " +lat ) ;
+			}
+			else
+			{
+				Log.e(GeofenceUtils.APPTAG, "geofenceAudio object is null") ;
+			}
+    		    }catch (JSONException e) {
+        	   	   Log.e(GeofenceUtils.APPTAG, "Error parsing JSON geofence audio object " + geofenceAudioObject + e ) ;	
+    			}
+	}
+	/*
+	mGeofence1 = new SimpleGeofence(
             "1",
             55.9494252, // Latitude
              -3.1197155,  // Longitude
@@ -641,13 +729,14 @@ Toast.makeText(this, "Google Play Services NotAvailable",  Toast.LENGTH_SHORT).s
                // Try to add geofences
                mGeofenceRequester.addGeofences(mCurrentGeofences);
 	       Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
+
                } catch (UnsupportedOperationException e) {
                  // Notify user that previous request hasn't finished.
                  Toast.makeText(this, R.string.add_geofences_already_requested_error,
                         Toast.LENGTH_LONG).show();
                  }
-      
-       }
+       */
+       
     }
 
     @Override
@@ -668,7 +757,56 @@ Toast.makeText(this, "Google Play Services NotAvailable",  Toast.LENGTH_SHORT).s
 
 
 
+   protected String getWebJSON(String uri)
+   {
+	DefaultHttpClient   httpclient = new DefaultHttpClient(new BasicHttpParams());
+	// HttpPost httppost = new HttpPost("https://www.dropbox.com/s/pdqj9ncsb1xd8jp/backgrounds.json");
+	HttpPost httppost = new HttpPost(uri);
+	// Depends on your web service
+	httppost.setHeader("Content-type", "application/json");
 
+	InputStream inputStream = null;
+	String result = null;
+	try 
+	{
+    		HttpResponse response = httpclient.execute(httppost);           
+    		HttpEntity entity = response.getEntity();
+
+    		inputStream = entity.getContent();
+    		// json is UTF-8 by default
+    		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"), 8);
+    		StringBuilder sb = new StringBuilder();
+
+    		String line = null;
+    		while ((line = reader.readLine()) != null)
+    		{
+        		sb.append(line + "\n");
+    		}
+    		return sb.toString();
+		
+
+	} catch (Exception e) { 
+    	   Log.e(GeofenceUtils.APPTAG, "Could not read JSON data from remote source: " + e) ;
+	   return null ;
+	}
+	finally {
+    		try{if(inputStream != null)inputStream.close();}catch(Exception squish){ return null;}
+	}
+       
+   }
+
+   private class DownloadJSONTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... uri) {
+              
+                return getWebJSON(uri[0]);
+        }
+        // onPostExecute displays the results of the AsyncTask.
+        @Override
+        protected void onPostExecute(String result) {
+            addBackgroundGeofences(result);
+       }
+    }
 
 
   /**
