@@ -640,7 +640,7 @@ private boolean servicesConnected() {
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
 	
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/backgrounds.json");
+           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgrounds.json");
         	} 
 		else 
 		{
@@ -686,7 +686,49 @@ private boolean servicesConnected() {
 			{ // tag geofence_audio
         			int id = geofenceAudioObject.getInt("id");
         			double lat = geofenceAudioObject.getDouble("lat");
-		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id + " lat: " +lat ) ;
+        			double lon = geofenceAudioObject.getDouble("lon");
+        			float radius = (float)geofenceAudioObject.getDouble("radius");
+        			long duration = geofenceAudioObject.getLong("duration");
+                                JSONArray transitionsArray = geofenceAudioObject.getJSONArray("transitions") ;
+				int transitions = 0;
+				for(int j=0; j < transitionsArray.length() ; j++)
+				{
+					String transitionStr = transitionsArray.getString(j) ;
+					int transition = 0 ;
+				        if("ENTER".equals(transitionStr))
+							transition = Geofence.GEOFENCE_TRANSITION_ENTER ;
+					else if("EXIT".equals(transitionStr))
+							transition = Geofence.GEOFENCE_TRANSITION_EXIT ;
+				
+
+					transitions = transitions | transition ;
+				}
+				String track = geofenceAudioObject.getString("track");
+				boolean loop = geofenceAudioObject.getBoolean("loop") ;
+                                boolean varyVolume = geofenceAudioObject.getBoolean("vary_volume") ;
+
+                               
+
+				
+		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id +	
+				" lat: " + lat + " lon:" + lon + " radius:" + radius + 
+				" duration:" + duration + " transitions: " + transitions + " track:" + track + 
+				" loop:" + loop + " vary_volume:" + varyVolume) ;
+
+
+	                        SimpleGeofence geofence = new SimpleGeofence(
+                                 track,
+                                 lat, // Latitude
+            			 lon,  // Longitude
+            			 radius, // radius
+            			 // expiration time
+            			 duration,
+            			 transitions);
+
+            			mGeofencePrefs.setGeofence(track, geofence);
+       	    			mCurrentGeofences.add(geofence.toGeofence());
+			         	
+				
 			}
 			else
 			{
@@ -723,7 +765,7 @@ private boolean servicesConnected() {
             mGeofencePrefs.setGeofence("2", mGeofence2);
        	    mCurrentGeofences.add(mGeofence1.toGeofence());
        	    mCurrentGeofences.add(mGeofence2.toGeofence());
-	
+       */	
            // Start the request. Fail if there's already a request in progress
            try {
                // Try to add geofences
@@ -735,7 +777,7 @@ private boolean servicesConnected() {
                  Toast.makeText(this, R.string.add_geofences_already_requested_error,
                         Toast.LENGTH_LONG).show();
                  }
-       */
+      
        
     }
 
