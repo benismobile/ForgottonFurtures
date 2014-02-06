@@ -514,8 +514,10 @@ public void framemarkers()
      	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
         if(mBackgroundAudioService!=null)
 	{ 
-	        mBackgroundAudioService.play() ;
-		Log.d(GeofenceUtils.APPTAG, "play audio");
+	        // TODO change volume mBackgroundAudioService.play() ;
+		// 1. get active backgound geofences
+		// 2. change volume for each backgound geofence
+		// Log.d(GeofenceUtils.APPTAG, "change volume");
 	}
 	
      }
@@ -703,13 +705,12 @@ private boolean servicesConnected() {
 
 					transitions = transitions | transition ;
 				}
+
 				String track = geofenceAudioObject.getString("track");
 				boolean loop = geofenceAudioObject.getBoolean("loop") ;
                                 boolean varyVolume = geofenceAudioObject.getBoolean("vary_volume") ;
 
                                
-
-				
 		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id +	
 				" lat: " + lat + " lon:" + lon + " radius:" + radius + 
 				" duration:" + duration + " transitions: " + transitions + " track:" + track + 
@@ -724,8 +725,8 @@ private boolean servicesConnected() {
             			 // expiration time
             			 duration,
             			 transitions);
-
-            			mGeofencePrefs.setGeofence(track, geofence);
+                                // TODO set stored prefs values for track, loop, vary_volume
+            			// mGeofencePrefs.setGeofence(track, geofence);
        	    			mCurrentGeofences.add(geofence.toGeofence());
 			         	
 				
@@ -738,34 +739,6 @@ private boolean servicesConnected() {
         	   	   Log.e(GeofenceUtils.APPTAG, "Error parsing JSON geofence audio object " + geofenceAudioObject + e ) ;	
     			}
 	}
-	/*
-	mGeofence1 = new SimpleGeofence(
-            "1",
-            55.9494252, // Latitude
-             -3.1197155,  // Longitude
-            75, // radius
-            // expiration time
-            120 * 1000,
-            // Only detect entry transitions
-            Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT);
-
-          mGeofence2 = new SimpleGeofence(
-            "2",
-            55.9494253, // Latitude
-            -3.1197156, // Longitude
-            75, // radius
-            // Set the expiration time
-            120 * 1000,
-            // Detect both entry and exit transitions
-            Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT);
- 
-            
-            Log.d(GeofenceUtils.APPTAG, "adding 2 geofences to prefs and geofence list") ;
-            mGeofencePrefs.setGeofence("1", mGeofence1);
-            mGeofencePrefs.setGeofence("2", mGeofence2);
-       	    mCurrentGeofences.add(mGeofence1.toGeofence());
-       	    mCurrentGeofences.add(mGeofence2.toGeofence());
-       */	
            // Start the request. Fail if there's already a request in progress
            try {
                // Try to add geofences
@@ -802,7 +775,6 @@ private boolean servicesConnected() {
    protected String getWebJSON(String uri)
    {
 	DefaultHttpClient   httpclient = new DefaultHttpClient(new BasicHttpParams());
-	// HttpPost httppost = new HttpPost("https://www.dropbox.com/s/pdqj9ncsb1xd8jp/backgrounds.json");
 	HttpPost httppost = new HttpPost(uri);
 	// Depends on your web service
 	httppost.setHeader("Content-type", "application/json");
@@ -912,35 +884,51 @@ private boolean servicesConnected() {
          * @param intent The Intent containing the transition
          */
         private void handleGeofenceTransition(Context context, Intent intent) {
-            /*
-             * If you want to change the UI when a transition occurs, put the code
-             * here. The current design of the app uses a notification to inform the
-             * user that a transition has occurred.
-             */
 
                Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringExtra("TRANSITION_TYPE") );
-         // Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringArrayExtra("GEOFENCE_IDS") );
-	      //  int sound = mSoundMap.get(1).intValue() ;
-	      int sound = 1 ;
+               Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringArrayExtra("GEOFENCE_IDS") );
+	      
 	      String transitionType = intent.getStringExtra("TRANSITION_TYPE") ;
 	      String[] triggerGeofenceIds = intent.getStringArrayExtra("GEOFENCE_IDS") ;
 
-	      if("Entered".equals(transitionType))
-	      {
+	      for(int i = 0 ; i < triggerGeofenceIds.length ; i++)
+              {
 
-	        for(int i = 1 ; i <= triggerGeofenceIds.length ; i++)
-		{
-		      if(mSoundLoadedMap.contains(new Integer(i)))
-		      {
-	      // 	 playSound(i,1) ;
-               	      }
-                } 
+	        String geofenceId = triggerGeofenceIds[i] ;
+		Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: " + geofenceId ) ;
+
+	     	   if("Entered".equals(transitionType))
+	      	   {
 
 
-        //      GeofenceDialogFragment alert = new GeofenceDialogFragment();
-	//      alert.show(getFragmentManager(), "GeofenceEventFragment") ;
-	      }
-        }
+		        Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition ENTERED: " + geofenceId ) ;
+     			if(mIsBound)
+     			{
+        			if(mBackgroundAudioService!=null)
+				{	
+	        		   mBackgroundAudioService.play(geofenceId) ;
+			  	   Log.d(GeofenceUtils.APPTAG, "play audio: " + geofenceId);
+				}
+     			}
+
+        		//      GeofenceDialogFragment alert = new GeofenceDialogFragment();
+			//      alert.show(getFragmentManager(), "GeofenceEventFragment") ;
+	           }
+		   else if("Exited".equals(transitionType))
+		   {
+		        Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition EXITED: " + geofenceId ) ;
+     			if(mIsBound)
+     			{
+        			if(mBackgroundAudioService!=null)
+				{	
+	        		   mBackgroundAudioService.stop(geofenceId) ;
+			  	   Log.d(GeofenceUtils.APPTAG, "stop audio: " + geofenceId);
+				}
+     			}
+
+		   }
+       	     }
+       }
 
         /**
          * Report addition or removal errors to the UI, using a Toast

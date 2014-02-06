@@ -16,7 +16,7 @@ import com.example.android.location.R ;
 import com.example.android.geofence.GeofenceUtils ;
 
 import java.lang.CharSequence ;
-
+import java.util.HashMap ;
 
 public class BackgroundAudioService extends Service implements MediaPlayer.OnErrorListener {
     
@@ -27,7 +27,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     private Notification notification ;
     private final IBinder mBinder = new LocalBinder();
     private String track ;
-
+    private HashMap<String, MediaPlayer> playing = new HashMap<String, MediaPlayer>() ;
 
     @Override 
     public void onCreate()
@@ -96,14 +96,30 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     }
 
 
-    public void play()
+    public void play(String track)
     {
         
-         mMediaPlayer = MediaPlayer.create(this, R.raw.factory) ; 
-        if(! mMediaPlayer.isPlaying())
+        MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
+        // TODO add onCompleteListener so can remove from Playing 
+	if(! aMediaPlayer.isPlaying())
 	{
-	   mMediaPlayer.start() ;
+	  
+	   aMediaPlayer.start() ;
+	   playing.put(track, aMediaPlayer) ;
 	}
+
+    }
+
+    public void stop(String track)
+    {    
+          if(playing.containsKey(track))
+	  {
+          	MediaPlayer aMediaPlayer = playing.get(track) ;
+	  	playing.remove(track) ;
+	  	aMediaPlayer.stop() ;
+	  	aMediaPlayer.release() ;
+	  	aMediaPlayer = null ;
+	  }
 
     }
 
@@ -113,7 +129,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
             return BackgroundAudioService.this;
         }
     }
-   
+    
+    private int getTrackId(String track)
+    {
+       if("factory".equals(track))
+       {
+          return R.raw.factory ;
+       }
+       else if("sleepaway".equals(track))
+       {
+	  return R.raw.sleepaway ;
+       }
+
+       return 0 ;
+    }
 
 }
 
