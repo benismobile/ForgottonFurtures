@@ -323,10 +323,7 @@ implements
         mEditor.putBoolean(LocationUtils.KEY_UPDATES_REQUESTED, mUpdatesRequested);
         mEditor.commit();
 
-        mGeofencePrefs.setGeofence("1", mGeofence1);
-        mGeofencePrefs.setGeofence("2", mGeofence2);
-
-// TODO unregister broadcast receiver?
+        // TODO unregister broadcast receiver?
     }
 
 
@@ -726,7 +723,7 @@ private boolean servicesConnected() {
             			 duration,
             			 transitions);
                                 // TODO set stored prefs values for track, loop, vary_volume
-            			// mGeofencePrefs.setGeofence(track, geofence);
+            			mGeofencePrefs.setGeofence(track, geofence);
        	    			mCurrentGeofences.add(geofence.toGeofence());
 			         	
 				
