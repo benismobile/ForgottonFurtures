@@ -110,6 +110,7 @@ implements
 
    // Store a list of geofences to add
    List<Geofence> mCurrentGeofences;
+   ArrayList<String> mCurrentGeofenceIds ;
 
    // Add geofences handler
    private GeofenceRequester mGeofenceRequester;
@@ -119,8 +120,6 @@ implements
    private DecimalFormat mLatLngFormat;
    private DecimalFormat mRadiusFormat;
 
-   private SimpleGeofence mGeofence1;
-   private SimpleGeofence mGeofence2;
    
    private GeofenceSampleReceiver mBroadcastReceiver;
 
@@ -306,11 +305,12 @@ implements
 
      // After disconnect() is called, the client is considered "dead".
      mLocationClient.disconnect();
-     mPlayer.release() ;
-     mPlayer = null ;
+     // mPlayer.release() ;
+     // mPlayer = null ;
+     // mPlayer2.release() ;
+     // mPlayer2 = null ;
+     
      super.onStop();
-     mPlayer2.release() ;
-     mPlayer2 = null ;
    } // end onStop()
 
 
@@ -332,12 +332,54 @@ implements
 
         super.onStart();
 
-        /*
-         * Connect the client. Don't re-start any requests here;
-         * instead, wait for onConnected() callback
-         */
         mLocationClient.connect();
         
+   }
+
+   @Override
+   public void onSaveInstanceState(Bundle savedInstanceState) {
+
+      
+
+     if(mCurrentGeofences != null && mCurrentGeofences.size() > 0)
+      {
+   
+	
+	for(int i = 0 ; i < mCurrentGeofences.size() ; i++)
+	{
+	   Geofence gf = mCurrentGeofences.get(i) ;
+           Log.d(GeofenceUtils.APPTAG, "onSavedInstanceState saving current geofence: " + gf.getRequestId() ) ;
+           mCurrentGeofenceIds.add(gf.getRequestId() ) ;
+	
+	}
+
+	savedInstanceState.putStringArrayList("mCurrentGeofenceIds", mCurrentGeofenceIds) ;
+
+     }
+    
+     super.onSaveInstanceState(savedInstanceState);
+   }
+
+
+   public void onRestoreInstanceState(Bundle savedInstanceState) {
+    	super.onRestoreInstanceState(savedInstanceState);
+   
+    // Restore state members from saved instance
+        ArrayList<String> currentGeofenceIds = savedInstanceState.getStringArrayList("mCurrentGeofenceIds");
+	if(currentGeofenceIds != null && currentGeofenceIds.size() > 0)
+	{
+	   String[] gfids = new String[currentGeofenceIds.size()] ;
+
+	   currentGeofenceIds.toArray(gfids) ;
+
+	   for(int i = 0 ; i < gfids.length ; i++)
+	   {
+	     String gfID = gfids[i] ;
+             SimpleGeofence gf = mGeofencePrefs.getGeofence(gfID);
+             mCurrentGeofences.add(gf.toGeofence());
+
+	   }
+       }
    }
 
    @Override
@@ -360,10 +402,17 @@ implements
 
 
       LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, mIntentFilter);
+  
+
+
+   /*
+
       Time now = new Time() ;
       now.setToNow() ;
       long nowMillis = now.toMillis(false) ;
-      mGeofence1 = mGeofencePrefs.getGeofence("1");
+   
+   //TODO get current geofences
+       mGeofence1 = mGeofencePrefs.getGeofence("1");
       mGeofence2 = mGeofencePrefs.getGeofence("2");
 
       // the list of current geofences is not empty
@@ -402,6 +451,8 @@ implements
               mCurrentGeofences.add(mGeofence2.toGeofence());
 	   }
         }
+
+   */
 }
 
 
@@ -493,6 +544,7 @@ public void framemarkers()
       private void stopPeriodicUpdates() {
         mLocationClient.removeLocationUpdates(this);
       }
+
 
 
     @Override
