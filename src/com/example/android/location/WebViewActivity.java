@@ -345,11 +345,13 @@ implements
       {
    
 	
+        ArrayList<String> currentGeofenceIds = new ArrayList<String>() ;
+
 	for(int i = 0 ; i < mCurrentGeofences.size() ; i++)
 	{
 	   Geofence gf = mCurrentGeofences.get(i) ;
            Log.d(GeofenceUtils.APPTAG, "onSavedInstanceState saving current geofence: " + gf.getRequestId() ) ;
-           mCurrentGeofenceIds.add(gf.getRequestId() ) ;
+	   currentGeofenceIds.add(gf.getRequestId() ) ;
 	
 	}
 
@@ -366,7 +368,7 @@ implements
    
     // Restore state members from saved instance
         ArrayList<String> currentGeofenceIds = savedInstanceState.getStringArrayList("mCurrentGeofenceIds");
-	if(currentGeofenceIds != null && currentGeofenceIds.size() > 0)
+	if(currentGeofenceIds != null && currentGeofenceIds.size() > 0 && mCurrentGeofences == null )
 	{
 	   String[] gfids = new String[currentGeofenceIds.size()] ;
 
@@ -560,7 +562,7 @@ public void framemarkers()
      if(mIsBound)
      {
 
-     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
+     	// Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
         if(mBackgroundAudioService!=null)
 	{ 
 	        // TODO change volume mBackgroundAudioService.play() ;
@@ -571,80 +573,7 @@ public void framemarkers()
 	
      }
 
-     /*
-     
-     if(!mBackgroundAudioServiceRunning)
-     {
-     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: startAudioService" ) ;
-     	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
-     	// startAudioIntent.putExtra(BackgroundAudioService.EXTRA_TRACK, R.raw.factory) ;
-     	startAudioIntent.setAction(BackgroundAudioService.ACTION_PLAY) ;
-	this.startService(startAudioIntent) ;
-     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: startedAudioService" ) ;
-	mBackgroundAudioServiceRunning = true ;
-     }
 
-
-     */
-
-
-
-    // TODO change volume of stream according to location
-/*
-      if(!mPlayer.isPlaying())
-      {
-	mPlayer.start() ;
-      }
-      else
-      {
-        if(mPlayer.getCurrentPosition() > 11000)
-	{
-		if(mSoundLoadedMap.contains(new Integer(1)))
-		{
-           	  playSound(1,1,3) ;
-	   	  mSoundLoadedMap.remove(new Integer(1)) ;
-                }
-           
-         }	
-	  
-      }
-
-      
-      if(!mPlayer2.isPlaying())
-      {
-        mPlayer2.start() ;
-      }
-*/
-  /*
-        
-        if(mSoundLoadedMap.contains(new Integer(1)))
-	{
-           playSound(1,1,3) ;
-	   mSoundLoadedMap.remove(new Integer(1)) ;
-
-           // mSoundPool.setVolume(1, 0.5f, 0.5f) ;
-	}
-	
-	if(mSoundLoadedMap.contains(new Integer(2)))
-	{
-           playSound(2,1,5) ;
-	   mSoundLoadedMap.remove(new Integer(2)) ;
-          //  mSoundPool.setVolume(1, 0.5f, 0.5f) ;
-	}
-
-
-        if(mSoundLoadedMap.contains(new Integer(3)))
-	{
-           playSound(3,1) ;
-           mSoundPool.setVolume(1, 0.5f, 0.5f) ;
-	}
-        if(mSoundLoadedMap.contains(new Integer(4)))
-	{
-           playSound(4,1) ;
-           mSoundPool.setVolume(2, 0.5f, 0.5f) ;
-        }
-
-	*/
  }
 
 
