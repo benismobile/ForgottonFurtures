@@ -567,7 +567,7 @@ public void framemarkers()
 	{ 
 	        // TODO change volume mBackgroundAudioService.play() ;
 		// 1. get active backgound geofences
-		// 2. change volume for each backgound geofence
+		// 2. change volume for each backgound geofence according to location.distanceBetween
 		// Log.d(GeofenceUtils.APPTAG, "change volume");
 	}
 	
