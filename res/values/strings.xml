@@ -135,7 +135,7 @@
     </string>
 
     <string name="geofence_transition_notification_title">
-        %1$s geofence(s) %2$s
+        %1$s zone(s) %2$s
     </string>
 
 

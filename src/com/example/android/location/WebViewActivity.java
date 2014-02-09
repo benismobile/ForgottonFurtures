@@ -295,13 +295,13 @@ implements
    public void onStop() {
 
      // If the client is connected
-     if (mLocationClient.isConnected())
-     {
-        stopPeriodicUpdates();
-     }
+  //   if (mLocationClient.isConnected())
+  //   {
+  //      stopPeriodicUpdates();
+  //   }
 
      // After disconnect() is called, the client is considered "dead".
-      mLocationClient.disconnect();
+//      mLocationClient.disconnect();
      
      super.onStop();
    } // end onStop()
