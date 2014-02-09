@@ -114,6 +114,19 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 
     }
 
+    public void changeVolume(String track, float volume)
+    {
+         MediaPlayer trackPlayer = playing.get(track) ;
+	 
+	 if(trackPlayer != null && trackPlayer.isPlaying())
+	 {
+	     trackPlayer.setVolume(volume, volume) ;
+
+	 }
+
+    }
+
+
     public void stop(String track)
     {    
           if(playing.containsKey(track))

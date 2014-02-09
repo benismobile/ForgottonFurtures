@@ -259,13 +259,10 @@ implements
         });
        
       
-        mSoundMap.put(1, mSoundPool.load(this, R.raw.radio, 1));
-        mSoundMap.put(2, mSoundPool.load(this, R.raw.radio2, 1));
-        mSoundMap.put(3, mSoundPool.load(this, R.raw.radio5, 1));
-        mSoundMap.put(4, mSoundPool.load(this, R.raw.radio6, 1));
+        // mSoundMap.put(4, mSoundPool.load(this, R.raw.radio6, 1));
 
-	mPlayer =  MediaPlayer.create(this, R.raw.factory) ;
-	mPlayer2 = MediaPlayer.create(this, R.raw.sleepaway) ;
+	// mPlayer =  MediaPlayer.create(this, R.raw.factory) ;
+	// mPlayer2 = MediaPlayer.create(this, R.raw.sleepaway) ;
       
      	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
      	// startAudioIntent.setAction(BackgroundAudioService.ACTION_PLAY) ;
@@ -293,7 +290,7 @@ implements
 
   }
   
-
+/*
    @Override
    public void onStop() {
 
@@ -304,16 +301,12 @@ implements
      }
 
      // After disconnect() is called, the client is considered "dead".
-     mLocationClient.disconnect();
-     // mPlayer.release() ;
-     // mPlayer = null ;
-     // mPlayer2.release() ;
-     // mPlayer2 = null ;
+      mLocationClient.disconnect();
      
      super.onStop();
    } // end onStop()
 
-
+*/
 
     @Override
     public void onPause() {
@@ -567,14 +560,44 @@ public void framemarkers()
 	{ 
 	        // TODO change volume mBackgroundAudioService.play() ;
 		// 1. get active backgound geofences
-		// 2. change volume for each backgound geofence according to location.distanceBetween
-		// Log.d(GeofenceUtils.APPTAG, "change volume");
+		
+	    if(mCurrentGeofences != null && mCurrentGeofences.size() > 0)
+	    {
+	       for(int i = 0 ; i < mCurrentGeofences.size() ; i++)
+	       {
+	          Geofence gf = mCurrentGeofences.get(i) ;
+                  Log.d(GeofenceUtils.APPTAG, "onLocationChanged: check volume of: " + gf.getRequestId() ) ;
+	          String trackID = gf.getRequestId() ;
+		  //  get SimpleGeofence object and lon/lat 
+                  SimpleGeofence sgf = mGeofencePrefs.getGeofence(trackID);
+		  double gfLongitude = sgf.getLongitude() ;
+		  double gfLatitude = sgf.getLatitude() ;
+		  double latitude = location.getLatitude() ;
+		  double longitude = location.getLongitude() ;
+		  float[] distanceCalc = new float[2];
+                  location.distanceBetween(latitude, longitude, gfLatitude, gfLongitude, distanceCalc) ;
+		  if(distanceCalc.length > 0 )
+		  {
+                  	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: distance to GF " + trackID + " is: " + distanceCalc[0] ) ;
+			float volumeScalar = (100 - distanceCalc[0]) / 100 ;
+			if(volumeScalar < 0.1) volumeScalar = 0.1f ; 
+        		if(mBackgroundAudioService!=null)
+			{	
+	        	   mBackgroundAudioService.changeVolume(trackID, volumeScalar) ;
+			   Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volumeScalar);
+			}
+
+                  } 
+		  
+
+	       }
+	    }
+		
 	}
 	
      }
 
-
- }
+  }
 
 
 private boolean servicesConnected() {
@@ -610,8 +633,8 @@ private boolean servicesConnected() {
        if(mCurrentGeofences != null && mCurrentGeofences.size() == 0)
        {
       		mRequestType = GeofenceUtils.REQUEST_TYPE.ADD;
-		Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected: adding gfs") ;
-       		Toast.makeText(this, "WebViewActivity OnConnected: adding gfs"  ,Toast.LENGTH_SHORT).show();
+		Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected") ;
+       		Toast.makeText(this, "WebViewActivity OnConnected"  ,Toast.LENGTH_SHORT).show();
      
 
         	ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -620,7 +643,7 @@ private boolean servicesConnected() {
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
 	
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgrounds.json");
+           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
         	} 
 		else 
 		{
