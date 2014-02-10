@@ -558,8 +558,6 @@ public void framemarkers()
      	// Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
         if(mBackgroundAudioService!=null)
 	{ 
-	        // TODO change volume mBackgroundAudioService.play() ;
-		// 1. get active backgound geofences
 		
 	    if(mCurrentGeofences != null && mCurrentGeofences.size() > 0)
 	    {
@@ -575,12 +573,24 @@ public void framemarkers()
 		  double latitude = location.getLatitude() ;
 		  double longitude = location.getLongitude() ;
 		  float[] distanceCalc = new float[2];
+		  float radius = sgf.getRadius() ;
+
                   location.distanceBetween(latitude, longitude, gfLatitude, gfLongitude, distanceCalc) ;
 		  if(distanceCalc.length > 0 )
 		  {
                   	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: distance to GF " + trackID + " is: " + distanceCalc[0] ) ;
-			float volumeScalar = (100 - distanceCalc[0]) / 100 ;
-			if(volumeScalar < 0.1) volumeScalar = 0.1f ; 
+	                
+			
+		        
+                        float maxLog = (float) Math.log10(radius)  ;
+			
+			float logDist = (float) Math.log10((distanceCalc[0]  + 1))  ; // add 1 to ensure vol always > 0
+	                float volumeScalar = 1 - ( logDist / maxLog )  ;
+
+
+	                //float volumeScalar = (100 - distanceCalc[0]) / 100 ;
+
+			// if(volumeScalar < 0.1) volumeScalar = 0.1f ; 
         		if(mBackgroundAudioService!=null)
 			{	
 	        	   mBackgroundAudioService.changeVolume(trackID, volumeScalar) ;
@@ -643,7 +653,7 @@ private boolean servicesConnected() {
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
 	
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/kai_backgrounds.json");
         	} 
 		else 
 		{
@@ -907,8 +917,8 @@ private boolean servicesConnected() {
      			{
         			if(mBackgroundAudioService!=null)
 				{	
-	        		   mBackgroundAudioService.play(geofenceId) ;
-			  	   Log.d(GeofenceUtils.APPTAG, "play audio: " + geofenceId);
+	        		   mBackgroundAudioService.play(geofenceId, true) ; // TODO get looping from SimpleGeofence
+	                	   Log.d(GeofenceUtils.APPTAG, "play audio: " + geofenceId);
 				}
      			}
 
