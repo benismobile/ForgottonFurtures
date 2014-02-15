@@ -555,7 +555,6 @@ public void framemarkers()
      if(mIsBound)
      {
 
-     	// Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
         if(mBackgroundAudioService!=null)
 	{ 
 		
@@ -564,49 +563,22 @@ public void framemarkers()
 	       for(int i = 0 ; i < mCurrentGeofences.size() ; i++)
 	       {
 	          Geofence gf = mCurrentGeofences.get(i) ;
-                  Log.d(GeofenceUtils.APPTAG, "onLocationChanged: check volume of: " + gf.getRequestId() ) ;
 	          String trackID = gf.getRequestId() ;
 		  //  get SimpleGeofence object and lon/lat 
                   SimpleGeofence sgf = mGeofencePrefs.getGeofence(trackID);
-		  double gfLongitude = sgf.getLongitude() ;
-		  double gfLatitude = sgf.getLatitude() ;
 		  boolean varyVolume = sgf.getVaryVolume() ;
-		  double latitude = location.getLatitude() ;
-		  double longitude = location.getLongitude() ;
-		  float[] distanceCalc = new float[2];
-		  float radius = sgf.getRadius() ;
 
-                  location.distanceBetween(latitude, longitude, gfLatitude, gfLongitude, distanceCalc) ;
-		  if(distanceCalc.length > 0 )
+
+                  float volume = getVolumeFromDistanceBetween(location, sgf) ;
+
+       		  if(mBackgroundAudioService!=null)
 		  {
-                  	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: distance to GF " + trackID + " is: " + distanceCalc[0] ) ;
-	                
-			
-		        
-                        float maxLog = (float) Math.log10(radius)  ;
-			
-			float logDist = (float) Math.log10((distanceCalc[0]  + 1))  ; // add 1 to ensure vol always > 0
-	                float volumeScalar = 1 - ( logDist / maxLog )  ;
-
-
-                  	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: volumeScalar is: " + volumeScalar ) ;
-	                //float volumeScalar = (100 - distanceCalc[0]) / 100 ;
-
-			// if(volumeScalar < 0.1) volumeScalar = 0.1f ; 
-        		if(mBackgroundAudioService!=null)
-			{
-
-			   if(varyVolume)
-			   {
-
-
-	        	      mBackgroundAudioService.changeVolume(trackID, volumeScalar) ;
-			      Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volumeScalar);
-			   }
-			}
-
-                  } 
-		  
+		     if(varyVolume)
+		     {
+	               mBackgroundAudioService.changeVolume(trackID, volume) ;
+		       Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volume);
+		     }
+	          }
 
 	       }
 	    }
@@ -947,16 +919,25 @@ private boolean servicesConnected() {
                 SimpleGeofence sgf = mGeofencePrefs.getGeofence(geofenceId);
                 boolean looping = sgf.getLooping() ; 
 
-	     	   if("Entered".equals(transitionType))
-	      	   {
+                float volume = 0.01f ;
+
+                // TODO getCurrentLocation 
+		if(mLocationClient != null && mLocationClient.isConnected())
+		{
+		   Location location = mLocationClient.getLastLocation() ;
+		   volume = getVolumeFromDistanceBetween(location, sgf) ;
+		   Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition VOLUME: " + volume);
+                }
 
 
+	     	 if("Entered".equals(transitionType))
+	      	 {
 		        Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition ENTERED: " + geofenceId ) ;
      			if(mIsBound)
      			{
         			if(mBackgroundAudioService!=null)
 				{	
-	        		   mBackgroundAudioService.play(geofenceId, looping) ; 
+	        		   mBackgroundAudioService.play(geofenceId, looping, volume) ; 
 	                	   Log.d(GeofenceUtils.APPTAG, "playing audio: " + geofenceId + " with looping:" + looping);
 				}
      			}

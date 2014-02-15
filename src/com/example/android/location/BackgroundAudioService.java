@@ -105,6 +105,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 
     }
 
+    public void play(String track, boolean looping, float volume)
+    {
+        
+        MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
+        // TODO add onCompleteListener so can remove from Playing 
+	if(! aMediaPlayer.isPlaying())
+	{
+	   aMediaPlayer.setLooping(looping);
+	   aMediaPlayer.setVolume(volume, volume) ;
+	   aMediaPlayer.start() ;
+	   playing.put(track, aMediaPlayer) ;
+	}
+
+    }
 
     public void play(String track, boolean looping)
     {
