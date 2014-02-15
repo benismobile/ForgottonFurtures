@@ -570,6 +570,7 @@ public void framemarkers()
                   SimpleGeofence sgf = mGeofencePrefs.getGeofence(trackID);
 		  double gfLongitude = sgf.getLongitude() ;
 		  double gfLatitude = sgf.getLatitude() ;
+		  boolean varyVolume = sgf.getVaryVolume() ;
 		  double latitude = location.getLatitude() ;
 		  double longitude = location.getLongitude() ;
 		  float[] distanceCalc = new float[2];
@@ -588,13 +589,20 @@ public void framemarkers()
 	                float volumeScalar = 1 - ( logDist / maxLog )  ;
 
 
+                  	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: volumeScalar is: " + volumeScalar ) ;
 	                //float volumeScalar = (100 - distanceCalc[0]) / 100 ;
 
 			// if(volumeScalar < 0.1) volumeScalar = 0.1f ; 
         		if(mBackgroundAudioService!=null)
-			{	
-	        	   mBackgroundAudioService.changeVolume(trackID, volumeScalar) ;
-			   Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volumeScalar);
+			{
+
+			   if(varyVolume)
+			   {
+
+
+	        	      mBackgroundAudioService.changeVolume(trackID, volumeScalar) ;
+			      Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volumeScalar);
+			   }
 			}
 
                   } 
@@ -653,7 +661,8 @@ private boolean servicesConnected() {
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
 	
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/kai_backgrounds.json");
+//           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/kai_backgrounds.json");
+           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
         	} 
 		else 
 		{
@@ -735,6 +744,8 @@ private boolean servicesConnected() {
             			 radius, // radius
             			 // expiration time
             			 duration,
+				 loop,
+				 varyVolume,
             			 transitions);
                                 // TODO set stored prefs values for track, loop, vary_volume
             			mGeofencePrefs.setGeofence(track, geofence);
@@ -908,6 +919,9 @@ private boolean servicesConnected() {
 	        String geofenceId = triggerGeofenceIds[i] ;
 		Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: " + geofenceId ) ;
 
+                SimpleGeofence sgf = mGeofencePrefs.getGeofence(geofenceId);
+                boolean looping = sgf.getLooping() ; 
+
 	     	   if("Entered".equals(transitionType))
 	      	   {
 
@@ -917,8 +931,8 @@ private boolean servicesConnected() {
      			{
         			if(mBackgroundAudioService!=null)
 				{	
-	        		   mBackgroundAudioService.play(geofenceId, true) ; // TODO get looping from SimpleGeofence
-	                	   Log.d(GeofenceUtils.APPTAG, "play audio: " + geofenceId);
+	        		   mBackgroundAudioService.play(geofenceId, looping) ; 
+	                	   Log.d(GeofenceUtils.APPTAG, "playing audio: " + geofenceId + " with looping:" + looping);
 				}
      			}
 

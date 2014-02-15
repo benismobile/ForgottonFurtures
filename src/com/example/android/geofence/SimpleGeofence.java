@@ -28,6 +28,8 @@ public class SimpleGeofence {
     private final double mLongitude;
     private final float mRadius;
     private long mExpirationDuration;
+    private boolean mLooping;
+    private boolean mVaryVolume ;
     private int mTransitionType;
     private long mExpirationTime ;
 
@@ -46,6 +48,8 @@ public class SimpleGeofence {
             double longitude,
             float radius,
             long expiration,
+	    boolean looping,
+	    boolean varyVolume,
             int transition) {
         // Set the instance fields from the constructor
 
@@ -68,7 +72,9 @@ public class SimpleGeofence {
         Time now = new Time() ;
 	now.setToNow() ;
         this.mExpirationTime = now.toMillis(false) + mExpirationDuration ;
-
+        
+	this.mLooping = looping ;
+	this.mVaryVolume = varyVolume ;
 
     }
     // Instance field getters
@@ -79,6 +85,8 @@ public class SimpleGeofence {
             float radius,
             long expiration,
 	    long expirationTime,
+	    boolean looping,
+	    boolean varyVolume,
             int transition) {
         // Set the instance fields from the constructor
 
@@ -96,6 +104,8 @@ public class SimpleGeofence {
         this.mExpirationDuration = expiration;
         // Transition type
         this.mTransitionType = transition;
+	this.mLooping = looping ;
+	this.mVaryVolume = varyVolume ;
 	// use persisted expiration time
 	this.mExpirationTime = expirationTime ;
    }  
@@ -109,8 +119,30 @@ public class SimpleGeofence {
         return mId;
     }
 
+
+
     /**
-     * Get the geofence latitude
+    * Get the media looping flag
+    *
+    */
+    public boolean getLooping()
+    {
+       return mLooping ;
+
+    }
+
+    /**
+    * Get the media varyVolume flag
+    *
+    */
+    public boolean getVaryVolume()
+    {
+       return mVaryVolume ;
+
+    }
+
+    /**
+     * Get the geofence latitudea
      * @return A latitude value
      */
     public double getLatitude() {

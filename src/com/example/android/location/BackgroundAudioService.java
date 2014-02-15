@@ -65,12 +65,18 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     @Override
     public void onDestroy() {
         // Cancel the persistent notification.
-        stopForeground(true) ; 
+ 
+        // stopForeground(true) ; 
         
 	if(mMediaPlayer!=null)
 	{
 		mMediaPlayer.stop() ;
 		mMediaPlayer.release() ;
+	}
+
+	if(playing != null)
+	{
+           playing.clear();
 	}
     }
 

@@ -87,6 +87,21 @@ public class SimpleGeofenceStore {
         long expirationTime = mPrefs.getLong(
                 getGeofenceFieldKey(id, GeofenceUtils.KEY_EXPIRATION_TIME),
                 0);
+
+
+        /*
+	* Get media looping flag from shared prefs
+	*
+	*/
+	boolean looping = mPrefs.getBoolean(getGeofenceFieldKey(id, "MEDIA_LOOPING"), false) ;
+
+        /*
+	* Get media varyVolume flag from shared prefs
+	*
+	*/
+	boolean varyVolume = mPrefs.getBoolean(getGeofenceFieldKey(id, "MEDIA_VARY_VOLUME"), false) ;
+
+
         /*
          * Get the transition type for the geofence identified by
          * id, or GeofenceUtils.INVALID_VALUE if it doesn't exist
@@ -105,7 +120,7 @@ public class SimpleGeofenceStore {
 
             // Return a true Geofence object
             // TODO add expire time into constructor
-	    return new SimpleGeofence(id, lat, lng, radius, expirationDuration, expirationTime, transitionType);
+	    return new SimpleGeofence(id, lat, lng, radius, expirationDuration, expirationTime, looping, varyVolume, transitionType);
 	    
 
         // Otherwise, return null.
@@ -149,6 +164,11 @@ public class SimpleGeofenceStore {
 	editor.putLong(
                 getGeofenceFieldKey(id, GeofenceUtils.KEY_EXPIRATION_TIME),
                 geofence.getExpirationTime());
+        
+	editor.putBoolean(getGeofenceFieldKey(id, "MEDIA_LOOPING"), geofence.getLooping()) ;
+
+        editor.putBoolean(getGeofenceFieldKey(id, "MEDIA_VARY_VOLUME"), geofence.getVaryVolume()) ;
+
 
         editor.putInt(
                 getGeofenceFieldKey(id, GeofenceUtils.KEY_TRANSITION_TYPE),
@@ -167,6 +187,8 @@ public class SimpleGeofenceStore {
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_RADIUS));
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_EXPIRATION_DURATION));
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_EXPIRATION_TIME));
+	editor.remove(getGeofenceFieldKey(id, "MEDIA_LOOPING"));
+	editor.remove(getGeofenceFieldKey(id, "MEDIA_VARY_VOLUME"));
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_TRANSITION_TYPE));
         editor.commit();
     }
