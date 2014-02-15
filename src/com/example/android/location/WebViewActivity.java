@@ -617,6 +617,31 @@ public void framemarkers()
 
   }
 
+private float getVolumeFromDistanceBetween(Location location, SimpleGeofence sgf)
+{
+
+
+  double gfLongitude = sgf.getLongitude() ;
+  double gfLatitude = sgf.getLatitude() ;
+  double latitude = location.getLatitude() ;
+  double longitude = location.getLongitude() ;
+  float[] distanceCalc = new float[2];
+  float radius = sgf.getRadius() ;
+  location.distanceBetween(latitude, longitude, gfLatitude, gfLongitude, distanceCalc) ;
+  if(distanceCalc.length > 0 )
+  {
+     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: distance to GF " + sgf.getId() + " is: " + distanceCalc[0] ) ;
+        float maxLog = (float) Math.log10(radius)  ;
+	float logDist = (float) Math.log10((distanceCalc[0]  + 1))  ; // add 1 to ensure vol always > 0
+        float volumeScalar = 1 - ( logDist / maxLog )  ;
+        return volumeScalar ;
+	                
+  }
+  return 0.05f ;
+
+}
+
+
 
 private boolean servicesConnected() {
 

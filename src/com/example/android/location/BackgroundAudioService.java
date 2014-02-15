@@ -179,6 +179,10 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
        {
 	  return R.raw.sleepaway ;
        }
+       else if("kalimba".equals(track))
+       {
+	  return R.raw.kalimba ;
+       }
 
        return 0 ;
     }
