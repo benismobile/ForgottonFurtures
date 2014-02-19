@@ -1,0 +1,53 @@
+{
+    "conversations": [
+        {   
+		 "name": "RobotBob",
+            "geofence_audio": {
+                "id": 1,
+                "lat": 55.948407,
+                "lon": -3.121025,
+                "radius": 250,
+                "duration": 1200000,
+                "transitions": [
+                    "ENTER",
+                    "EXIT"
+                ],
+                "track": "factory",
+                "loop": false,
+                "vary_volume": false,
+                "on_complete": {
+                    "dialog": {
+                        "options": [
+                            {
+                                "option": "I’m from the other side of the Rift, pleased to meet you.",
+                                "audio": {
+                                    "id": 1,
+                                    "track": "sleepaway",
+                                    "loop": false
+                                    
+                                }
+                            },
+                            {
+                                "option": "What’s it to you Tin Man?",
+                                "audio": {
+                                    "id": 2,
+                                    "track": "sleepaway",
+                                    "loop": false
+                                    
+                                }
+                            },
+                            {
+                                "option": "Just a visitor. Why are you smashing other robots?",
+                                "audio": {
+                                    "id": 3,
+                                    "track": "kalimba",
+                                    "loop": false
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -66,6 +66,7 @@ import android.app.FragmentManager ;
 
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.client.methods.HttpPost ;
+import org.apache.http.client.methods.HttpGet ;
 import org.apache.http.HttpResponse ;
 import org.apache.http.HttpEntity;
 import org.apache.http.params.BasicHttpParams ;
@@ -555,7 +556,6 @@ public void framemarkers()
      if(mIsBound)
      {
 
-     	// Log.d(GeofenceUtils.APPTAG, "onLocationChanged: AudioService is bound" ) ;
         if(mBackgroundAudioService!=null)
 	{ 
 		
@@ -564,41 +564,22 @@ public void framemarkers()
 	       for(int i = 0 ; i < mCurrentGeofences.size() ; i++)
 	       {
 	          Geofence gf = mCurrentGeofences.get(i) ;
-                  Log.d(GeofenceUtils.APPTAG, "onLocationChanged: check volume of: " + gf.getRequestId() ) ;
 	          String trackID = gf.getRequestId() ;
 		  //  get SimpleGeofence object and lon/lat 
                   SimpleGeofence sgf = mGeofencePrefs.getGeofence(trackID);
-		  double gfLongitude = sgf.getLongitude() ;
-		  double gfLatitude = sgf.getLatitude() ;
-		  double latitude = location.getLatitude() ;
-		  double longitude = location.getLongitude() ;
-		  float[] distanceCalc = new float[2];
-		  float radius = sgf.getRadius() ;
+		  boolean varyVolume = sgf.getVaryVolume() ;
 
-                  location.distanceBetween(latitude, longitude, gfLatitude, gfLongitude, distanceCalc) ;
-		  if(distanceCalc.length > 0 )
+
+                  float volume = getVolumeFromDistanceBetween(location, sgf) ;
+
+       		  if(mBackgroundAudioService!=null)
 		  {
-                  	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: distance to GF " + trackID + " is: " + distanceCalc[0] ) ;
-	                
-			
-		        
-                        float maxLog = (float) Math.log10(radius)  ;
-			
-			float logDist = (float) Math.log10((distanceCalc[0]  + 1))  ; // add 1 to ensure vol always > 0
-	                float volumeScalar = 1 - ( logDist / maxLog )  ;
-
-
-	                //float volumeScalar = (100 - distanceCalc[0]) / 100 ;
-
-			// if(volumeScalar < 0.1) volumeScalar = 0.1f ; 
-        		if(mBackgroundAudioService!=null)
-			{	
-	        	   mBackgroundAudioService.changeVolume(trackID, volumeScalar) ;
-			   Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volumeScalar);
-			}
-
-                  } 
-		  
+		     if(varyVolume)
+		     {
+	               mBackgroundAudioService.changeVolume(trackID, volume) ;
+		       Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volume);
+		     }
+	          }
 
 	       }
 	    }
@@ -608,6 +589,31 @@ public void framemarkers()
      }
 
   }
+
+private float getVolumeFromDistanceBetween(Location location, SimpleGeofence sgf)
+{
+
+
+  double gfLongitude = sgf.getLongitude() ;
+  double gfLatitude = sgf.getLatitude() ;
+  double latitude = location.getLatitude() ;
+  double longitude = location.getLongitude() ;
+  float[] distanceCalc = new float[2];
+  float radius = sgf.getRadius() ;
+  location.distanceBetween(latitude, longitude, gfLatitude, gfLongitude, distanceCalc) ;
+  if(distanceCalc.length > 0 )
+  {
+     	Log.d(GeofenceUtils.APPTAG, "onLocationChanged: distance to GF " + sgf.getId() + " is: " + distanceCalc[0] ) ;
+        float maxLog = (float) Math.log10(radius)  ;
+	float logDist = (float) Math.log10((distanceCalc[0]  + 1))  ; // add 1 to ensure vol always > 0
+        float volumeScalar = 1 - ( logDist / maxLog )  ;
+        return volumeScalar ;
+	                
+  }
+  return 0.05f ;
+
+}
+
 
 
 private boolean servicesConnected() {
@@ -652,8 +658,16 @@ private boolean servicesConnected() {
         
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
+<<<<<<< HEAD
 
            	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+=======
+	
+           	   	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+           	   	 new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
+           	   	// new DownloadBackgroundAudioJSONTask().execute("file://android/assets/geofences/backgroundsdev.json");
+           	   	//
+>>>>>>> a5dc88115638304d431e432987351bcb04fe1af1
         	} 
 		else 
 		{
@@ -665,7 +679,114 @@ private boolean servicesConnected() {
 
       }
 	
-     private void addBackgroundGeofences(String backgroundJSONStr)
+     private void addConversationGeofences(String conversationJSONStr)
+     {
+
+	if(conversationJSONStr == null) return ;
+        JSONArray jArray = null ;
+        Log.d(GeofenceUtils.APPTAG, "adding ConversationGeofences: " + conversationJSONStr) ;
+
+    	try {
+
+        	JSONObject jBackgrounds = new JSONObject(conversationJSONStr);	
+	
+        	jArray = jBackgrounds.getJSONArray("conversations");
+
+    	}catch (JSONException e) 
+	{
+		Log.e(GeofenceUtils.APPTAG, "Error parsing conversations JSON Str"+ e) ;
+		return ;
+
+	}
+
+	for (int i=0; i < jArray.length(); i++)
+	{
+                JSONObject conversationObject = null;
+	        JSONObject geofenceAudioObject = null;
+
+    		try {
+        		conversationObject = jArray.getJSONObject(i);
+                        String name = conversationObject.getString("name") ;            
+			geofenceAudioObject = conversationObject.getJSONObject("geofence_audio");  
+        		// Pulling items from the array
+			if(geofenceAudioObject!=null)
+			{ // tag geofence_audio
+        			int id = geofenceAudioObject.getInt("id");
+        			double lat = geofenceAudioObject.getDouble("lat");
+        			double lon = geofenceAudioObject.getDouble("lon");
+        			float radius = (float)geofenceAudioObject.getDouble("radius");
+        			long duration = geofenceAudioObject.getLong("duration");
+                                JSONArray transitionsArray = geofenceAudioObject.getJSONArray("transitions") ;
+				int transitions = 0;
+				for(int j=0; j < transitionsArray.length() ; j++)
+				{
+					String transitionStr = transitionsArray.getString(j) ;
+					int transition = 0 ;
+				        if("ENTER".equals(transitionStr))
+							transition = Geofence.GEOFENCE_TRANSITION_ENTER ;
+					else if("EXIT".equals(transitionStr))
+							transition = Geofence.GEOFENCE_TRANSITION_EXIT ;
+				
+
+					transitions = transitions | transition ;
+				}
+
+				String track = geofenceAudioObject.getString("track");
+				boolean loop = geofenceAudioObject.getBoolean("loop") ;
+                                boolean varyVolume = geofenceAudioObject.getBoolean("vary_volume") ;
+                                JSONObject onComplete = geofenceAudioObject.getJSONObject("onComplete") ; 
+                               // TODO handle onComplete
+		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id +	
+				" lat: " + lat + " lon:" + lon + " radius:" + radius + 
+				" duration:" + duration + " transitions: " + transitions + " track:" + track + 
+				" loop:" + loop + " vary_volume:" + varyVolume + "onComplete: " + onComplete ) ;
+
+                            /*
+	                        SimpleGeofence geofence = new SimpleGeofence(
+                                 track,
+                                 lat, // Latitude
+            			 lon,  // Longitude
+            			 radius, // radius
+            			 // expiration time
+            			 duration,
+				 loop,
+				 varyVolume,
+            			 transitions);
+                                // TODO set stored prefs values for track, loop, vary_volume
+            			mGeofencePrefs.setGeofence(track, geofence);
+       	    			mCurrentGeofences.add(geofence.toGeofence());
+			      */   	
+				
+			}
+			else
+			{
+				Log.e(GeofenceUtils.APPTAG, "geofenceAudio object is null") ;
+			}
+    		    }catch (JSONException e) {
+        	   	   Log.e(GeofenceUtils.APPTAG, "Error parsing JSON geofence audio object " + geofenceAudioObject + e ) ;	
+    			}
+	}
+           // Start the request. Fail if there's already a request in progress
+           try {
+               // Try to add geofences
+               mGeofenceRequester.addGeofences(mCurrentGeofences);
+	       Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
+
+               } catch (UnsupportedOperationException e) {
+                 // Notify user that previous request hasn't finished.
+                 Toast.makeText(this, R.string.add_geofences_already_requested_error,
+                        Toast.LENGTH_LONG).show();
+                 }
+      
+       
+    }
+   
+   
+   
+   
+   
+   
+   private void addBackgroundGeofences(String backgroundJSONStr)
      {
 
 	if(backgroundJSONStr == null) return ;
@@ -735,6 +856,8 @@ private boolean servicesConnected() {
             			 radius, // radius
             			 // expiration time
             			 duration,
+				 loop,
+				 varyVolume,
             			 transitions);
                                 // TODO set stored prefs values for track, loop, vary_volume
             			mGeofencePrefs.setGeofence(track, geofence);
@@ -782,6 +905,44 @@ private boolean servicesConnected() {
     }
 
 
+   protected String getLocalJSON(String uri)
+   {
+	DefaultHttpClient   httpclient = new DefaultHttpClient(new BasicHttpParams());
+	HttpGet httpget = new HttpGet(uri);
+	// Depends on your web service
+	httpget.setHeader("Content-type", "application/json");
+
+	InputStream inputStream = null;
+	String result = null;
+	try 
+	{
+    		HttpResponse response = httpclient.execute(httpget);           
+    		HttpEntity entity = response.getEntity();
+
+    		inputStream = entity.getContent();
+    		// json is UTF-8 by default
+    		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"), 8);
+    		StringBuilder sb = new StringBuilder();
+
+    		String line = null;
+    		while ((line = reader.readLine()) != null)
+    		{
+        		sb.append(line + "\n");
+    		}
+    		return sb.toString();
+		
+
+	} catch (Exception e) { 
+    	   Log.e(GeofenceUtils.APPTAG, "Could not read JSON data from remote source: " + e) ;
+	   return null ;
+	}
+	finally {
+    		try{if(inputStream != null)inputStream.close();}catch(Exception squish){ return null;}
+	}
+       
+   }
+
+
 
    protected String getWebJSON(String uri)
    {
@@ -820,11 +981,27 @@ private boolean servicesConnected() {
        
    }
 
-   private class DownloadJSONTask extends AsyncTask<String, Void, String> {
+
+   private class DownloadConversationsAudioJSONTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... uri) {
               
-                return getWebJSON(uri[0]);
+                return getLocalJSON(uri[0]);
+        }
+        // onPostExecute displays the results of the AsyncTask.
+        @Override
+        protected void onPostExecute(String result) {
+            addConversationGeofences(result);
+       }
+    }
+
+
+
+   private class DownloadBackgroundAudioJSONTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... uri) {
+              
+                return getLocalJSON(uri[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
@@ -908,17 +1085,29 @@ private boolean servicesConnected() {
 	        String geofenceId = triggerGeofenceIds[i] ;
 		Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: " + geofenceId ) ;
 
-	     	   if("Entered".equals(transitionType))
-	      	   {
+                SimpleGeofence sgf = mGeofencePrefs.getGeofence(geofenceId);
+                boolean looping = sgf.getLooping() ; 
+
+                float volume = 0.01f ;
+
+                // TODO getCurrentLocation 
+		if(mLocationClient != null && mLocationClient.isConnected())
+		{
+		   Location location = mLocationClient.getLastLocation() ;
+		   volume = getVolumeFromDistanceBetween(location, sgf) ;
+		   Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition VOLUME: " + volume);
+                }
 
 
+	     	 if("Entered".equals(transitionType))
+	      	 {
 		        Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition ENTERED: " + geofenceId ) ;
      			if(mIsBound)
      			{
         			if(mBackgroundAudioService!=null)
 				{	
-	        		   mBackgroundAudioService.play(geofenceId, true) ; // TODO get looping from SimpleGeofence
-	                	   Log.d(GeofenceUtils.APPTAG, "play audio: " + geofenceId);
+	        		   mBackgroundAudioService.play(geofenceId, looping, volume) ; 
+	                	   Log.d(GeofenceUtils.APPTAG, "playing audio: " + geofenceId + " with looping:" + looping);
 				}
      			}
 

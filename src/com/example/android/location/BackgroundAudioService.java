@@ -65,12 +65,18 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     @Override
     public void onDestroy() {
         // Cancel the persistent notification.
-        stopForeground(true) ; 
+ 
+        // stopForeground(true) ; 
         
 	if(mMediaPlayer!=null)
 	{
 		mMediaPlayer.stop() ;
 		mMediaPlayer.release() ;
+	}
+
+	if(playing != null)
+	{
+           playing.clear();
 	}
     }
 
@@ -99,6 +105,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 
     }
 
+    public void play(String track, boolean looping, float volume)
+    {
+        
+        MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
+        // TODO add onCompleteListener so can remove from Playing 
+	if(! aMediaPlayer.isPlaying())
+	{
+	   aMediaPlayer.setLooping(looping);
+	   aMediaPlayer.setVolume(volume, volume) ;
+	   aMediaPlayer.start() ;
+	   playing.put(track, aMediaPlayer) ;
+	}
+
+    }
 
     public void play(String track, boolean looping)
     {
@@ -172,6 +192,10 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
        else if("sleepaway".equals(track))
        {
 	  return R.raw.sleepaway ;
+       }
+       else if("kalimba".equals(track))
+       {
+	  return R.raw.kalimba ;
        }
 
        return 0 ;
