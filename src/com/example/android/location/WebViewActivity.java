@@ -652,8 +652,8 @@ private boolean servicesConnected() {
         
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
-	
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/kai_backgrounds.json");
+
+           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
         	} 
 		else 
 		{
