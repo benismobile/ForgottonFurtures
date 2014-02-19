@@ -66,6 +66,7 @@ import android.app.FragmentManager ;
 
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.client.methods.HttpPost ;
+import org.apache.http.client.methods.HttpGet ;
 import org.apache.http.HttpResponse ;
 import org.apache.http.HttpEntity;
 import org.apache.http.params.BasicHttpParams ;
@@ -658,8 +659,10 @@ private boolean servicesConnected() {
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
 	
-//           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/kai_backgrounds.json");
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+           	   	// new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+           	   	// new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
+           	   	new DownloadBackgroundAudioJSONTask().execute("file://android/assets/geofences/backgroundsdev.json");
+           	   	new DownloadConversationsAudioJSONTask().execute("file://android/assets/conversations.json");
         	} 
 		else 
 		{
@@ -671,7 +674,114 @@ private boolean servicesConnected() {
 
       }
 	
-     private void addBackgroundGeofences(String backgroundJSONStr)
+     private void addConversationGeofences(String conversationJSONStr)
+     {
+
+	if(conversationJSONStr == null) return ;
+        JSONArray jArray = null ;
+        Log.d(GeofenceUtils.APPTAG, "adding ConversationGeofences: " + conversationJSONStr) ;
+
+    	try {
+
+        	JSONObject jBackgrounds = new JSONObject(conversationJSONStr);	
+	
+        	jArray = jBackgrounds.getJSONArray("conversations");
+
+    	}catch (JSONException e) 
+	{
+		Log.e(GeofenceUtils.APPTAG, "Error parsing conversations JSON Str"+ e) ;
+		return ;
+
+	}
+
+	for (int i=0; i < jArray.length(); i++)
+	{
+                JSONObject conversationObject = null;
+	        JSONObject geofenceAudioObject = null;
+
+    		try {
+        		conversationObject = jArray.getJSONObject(i);
+                        String name = conversationObject.getString("name") ;            
+			geofenceAudioObject = conversationObject.getJSONObject("geofence_audio");  
+        		// Pulling items from the array
+			if(geofenceAudioObject!=null)
+			{ // tag geofence_audio
+        			int id = geofenceAudioObject.getInt("id");
+        			double lat = geofenceAudioObject.getDouble("lat");
+        			double lon = geofenceAudioObject.getDouble("lon");
+        			float radius = (float)geofenceAudioObject.getDouble("radius");
+        			long duration = geofenceAudioObject.getLong("duration");
+                                JSONArray transitionsArray = geofenceAudioObject.getJSONArray("transitions") ;
+				int transitions = 0;
+				for(int j=0; j < transitionsArray.length() ; j++)
+				{
+					String transitionStr = transitionsArray.getString(j) ;
+					int transition = 0 ;
+				        if("ENTER".equals(transitionStr))
+							transition = Geofence.GEOFENCE_TRANSITION_ENTER ;
+					else if("EXIT".equals(transitionStr))
+							transition = Geofence.GEOFENCE_TRANSITION_EXIT ;
+				
+
+					transitions = transitions | transition ;
+				}
+
+				String track = geofenceAudioObject.getString("track");
+				boolean loop = geofenceAudioObject.getBoolean("loop") ;
+                                boolean varyVolume = geofenceAudioObject.getBoolean("vary_volume") ;
+                                JSONObject onComplete = geofenceAudioObject.getJSONObject("onComplete") ; 
+                               // TODO handle onComplete
+		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id +	
+				" lat: " + lat + " lon:" + lon + " radius:" + radius + 
+				" duration:" + duration + " transitions: " + transitions + " track:" + track + 
+				" loop:" + loop + " vary_volume:" + varyVolume + "onComplete: " + onComplete ) ;
+
+                            /*
+	                        SimpleGeofence geofence = new SimpleGeofence(
+                                 track,
+                                 lat, // Latitude
+            			 lon,  // Longitude
+            			 radius, // radius
+            			 // expiration time
+            			 duration,
+				 loop,
+				 varyVolume,
+            			 transitions);
+                                // TODO set stored prefs values for track, loop, vary_volume
+            			mGeofencePrefs.setGeofence(track, geofence);
+       	    			mCurrentGeofences.add(geofence.toGeofence());
+			      */   	
+				
+			}
+			else
+			{
+				Log.e(GeofenceUtils.APPTAG, "geofenceAudio object is null") ;
+			}
+    		    }catch (JSONException e) {
+        	   	   Log.e(GeofenceUtils.APPTAG, "Error parsing JSON geofence audio object " + geofenceAudioObject + e ) ;	
+    			}
+	}
+           // Start the request. Fail if there's already a request in progress
+           try {
+               // Try to add geofences
+               mGeofenceRequester.addGeofences(mCurrentGeofences);
+	       Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
+
+               } catch (UnsupportedOperationException e) {
+                 // Notify user that previous request hasn't finished.
+                 Toast.makeText(this, R.string.add_geofences_already_requested_error,
+                        Toast.LENGTH_LONG).show();
+                 }
+      
+       
+    }
+   
+   
+   
+   
+   
+   
+   private void addBackgroundGeofences(String backgroundJSONStr)
      {
 
 	if(backgroundJSONStr == null) return ;
@@ -790,6 +900,44 @@ private boolean servicesConnected() {
     }
 
 
+   protected String getLocalJSON(String uri)
+   {
+	DefaultHttpClient   httpclient = new DefaultHttpClient(new BasicHttpParams());
+	HttpGet httpget = new HttpGet(uri);
+	// Depends on your web service
+	httpget.setHeader("Content-type", "application/json");
+
+	InputStream inputStream = null;
+	String result = null;
+	try 
+	{
+    		HttpResponse response = httpclient.execute(httpget);           
+    		HttpEntity entity = response.getEntity();
+
+    		inputStream = entity.getContent();
+    		// json is UTF-8 by default
+    		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"), 8);
+    		StringBuilder sb = new StringBuilder();
+
+    		String line = null;
+    		while ((line = reader.readLine()) != null)
+    		{
+        		sb.append(line + "\n");
+    		}
+    		return sb.toString();
+		
+
+	} catch (Exception e) { 
+    	   Log.e(GeofenceUtils.APPTAG, "Could not read JSON data from remote source: " + e) ;
+	   return null ;
+	}
+	finally {
+    		try{if(inputStream != null)inputStream.close();}catch(Exception squish){ return null;}
+	}
+       
+   }
+
+
 
    protected String getWebJSON(String uri)
    {
@@ -828,11 +976,27 @@ private boolean servicesConnected() {
        
    }
 
-   private class DownloadJSONTask extends AsyncTask<String, Void, String> {
+
+   private class DownloadConversationsAudioJSONTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... uri) {
               
-                return getWebJSON(uri[0]);
+                return getLocalJSON(uri[0]);
+        }
+        // onPostExecute displays the results of the AsyncTask.
+        @Override
+        protected void onPostExecute(String result) {
+            addConversationGeofences(result);
+       }
+    }
+
+
+
+   private class DownloadBackgroundAudioJSONTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... uri) {
+              
+                return getLocalJSON(uri[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
