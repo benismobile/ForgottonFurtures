@@ -62,6 +62,9 @@ import android.content.IntentFilter;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.format.Time ;
 import com.example.android.geofence.GeofenceDialogFragment ;
+import com.example.android.geofence.Dialog ;
+import com.example.android.geofence.Audio ;
+import com.example.android.geofence.Option ;
 import android.app.FragmentManager ;
 
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -658,16 +661,15 @@ private boolean servicesConnected() {
         
 		if (networkInfo != null && networkInfo.isConnected()) 
 		{
-<<<<<<< HEAD
 
-           	   	new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
-=======
+           	   	//  new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 	
-           	   	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+           	   // 	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+
+                   
+           	    	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+
            	   	 new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
-           	   	// new DownloadBackgroundAudioJSONTask().execute("file://android/assets/geofences/backgroundsdev.json");
-           	   	//
->>>>>>> a5dc88115638304d431e432987351bcb04fe1af1
         	} 
 		else 
 		{
@@ -710,7 +712,8 @@ private boolean servicesConnected() {
 			geofenceAudioObject = conversationObject.getJSONObject("geofence_audio");  
         		// Pulling items from the array
 			if(geofenceAudioObject!=null)
-			{ // tag geofence_audio
+			{ 
+			        // process tag geofence_audio
         			int id = geofenceAudioObject.getInt("id");
         			double lat = geofenceAudioObject.getDouble("lat");
         			double lon = geofenceAudioObject.getDouble("lon");
@@ -734,9 +737,54 @@ private boolean servicesConnected() {
 				String track = geofenceAudioObject.getString("track");
 				boolean loop = geofenceAudioObject.getBoolean("loop") ;
                                 boolean varyVolume = geofenceAudioObject.getBoolean("vary_volume") ;
-                                JSONObject onComplete = geofenceAudioObject.getJSONObject("onComplete") ; 
+                                JSONObject onComplete = geofenceAudioObject.getJSONObject("on_complete") ;
+                                if(onComplete==null)
+				{
+					Log.e(GeofenceUtils.APPTAG, "Error Invalid geofenceAudio object: no OnComplete object") ; 
+				        // TODO throw ParseException
+				}
+
+				Log.d(GeofenceUtils.APPTAG, "parsing onComplete") ;  
+				JSONObject dialog = onComplete.getJSONObject("dialog") ;
+				Log.d(GeofenceUtils.APPTAG, "parsing dialog") ;  
+			 	JSONArray optionsArray = dialog.getJSONArray("options") ;
+				Log.d(GeofenceUtils.APPTAG, "parsing optionsArray") ;
+			        
+				Option[] options = new Option[optionsArray.length()] ;
+                                        
+				if(options==null)
+				{
+                                  Log.e(GeofenceUtils.APPTAG, "Error Invalid dialog object in conversation: options array is null. Dialogs should always have some options");
+				 // TODO throw new ParseException
+
+				}
+					
+                                        
+				for(int k = 0 ; k < optionsArray.length() ; k++ )
+				{
+                                    JSONObject optionObj = optionsArray.getJSONObject(k) ;
+				    String optionStr = optionObj.getString("option") ;
+                                    JSONObject audioObj = optionObj.getJSONObject("audio") ;
+				    String audioTrackId = audioObj.getString("id") ;
+				    String audioTrack = audioObj.getString("track") ;
+				    JSONObject audioTrackOnComplete = audioObj.getJSONObject("on_complete") ;
+				    if(audioTrackOnComplete != null)
+				    {
+                                        JSONObject nextAudio = audioTrackOnComplete.getJSONObject("audio") ;
+
+
+				    }
+				    Audio audio = new Audio(audioTrackId, audioTrack) ;
+				    Option option = new Option(optionStr, audio) ;
+                                    options[k] = option ; 
+                                    Log.d(GeofenceUtils.APPTAG, audioTrack) ;
+				}
+
+                               	Dialog dialogObj = new Dialog(options) ;
+
+
                                // TODO handle onComplete
-		 		Log.d(GeofenceUtils.APPTAG, "Parsed geofence audio object: id: " + id +	
+		 		Log.d(GeofenceUtils.APPTAG, "Parsed conversation geofence audio object: id: " + id +	
 				" lat: " + lat + " lon:" + lon + " radius:" + radius + 
 				" duration:" + duration + " transitions: " + transitions + " track:" + track + 
 				" loop:" + loop + " vary_volume:" + varyVolume + "onComplete: " + onComplete ) ;
@@ -757,7 +805,7 @@ private boolean servicesConnected() {
        	    			mCurrentGeofences.add(geofence.toGeofence());
 			      */   	
 				
-			}
+		        }	
 			else
 			{
 				Log.e(GeofenceUtils.APPTAG, "geofenceAudio object is null") ;
@@ -769,8 +817,8 @@ private boolean servicesConnected() {
            // Start the request. Fail if there's already a request in progress
            try {
                // Try to add geofences
-               mGeofenceRequester.addGeofences(mCurrentGeofences);
-	       Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
+               // TODO add new ConversationGeofence mGeofenceRequester.addGeofences(mCurrentGeofences);
+	       // Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
 
                } catch (UnsupportedOperationException e) {
                  // Notify user that previous request hasn't finished.

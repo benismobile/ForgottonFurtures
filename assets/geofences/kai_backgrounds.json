@@ -6,7 +6,7 @@
                 "lat": 55.9494252,
                 "lon": -3.1197155,
                 "radius": 25,
-                "duration": 120000,
+                "duration": 1200000,
                 "transitions": [
                     "ENTER",
                     "EXIT"
@@ -22,7 +22,7 @@
                 "lat": 55.9494245,
                 "lon": -3.1197155,
                 "radius": 25,
-                "duration": 120000,
+                "duration": 1200000,
                 "transitions": [
                     "ENTER",
                     "EXIT"

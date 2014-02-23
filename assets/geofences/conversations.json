@@ -1,7 +1,7 @@
 {
     "conversations": [
         {   
-		 "name": "RobotBob",
+		 "name": "RobotBob Convo 1A",
             "geofence_audio": {
                 "id": 1,
                 "lat": 55.948407,
@@ -12,7 +12,7 @@
                     "ENTER",
                     "EXIT"
                 ],
-                "track": "factory",
+                "track": "convo1ablock1",
                 "loop": false,
                 "vary_volume": false,
                 "on_complete": {
@@ -22,17 +22,21 @@
                                 "option": "I’m from the other side of the Rift, pleased to meet you.",
                                 "audio": {
                                     "id": 1,
-                                    "track": "sleepaway",
-                                    "loop": false
-                                    
+                                    "track": "convo1ablock4"
                                 }
                             },
                             {
                                 "option": "What’s it to you Tin Man?",
                                 "audio": {
                                     "id": 2,
-                                    "track": "sleepaway",
-                                    "loop": false
+                                    "track": "convo1ablock2",
+						    "on_complete":{
+							  "audio": {
+							    "id":21,
+                                         "track":"convo1ablock4"
+							    	
+							   }
+							} 	 
                                     
                                 }
                             },
@@ -40,8 +44,7 @@
                                 "option": "Just a visitor. Why are you smashing other robots?",
                                 "audio": {
                                     "id": 3,
-                                    "track": "kalimba",
-                                    "loop": false
+                                    "track": "convo1ablock3"
                                 }
                             }
                         ]
