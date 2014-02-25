@@ -18,7 +18,6 @@ public class OnComplete implements IGeofenceVisitable{
   public void accept(IGeofenceVisitor geofenceVisitor)
   {
     
-//     geofenceVisitor.visit(this.visitable) ;
 
      try
      {

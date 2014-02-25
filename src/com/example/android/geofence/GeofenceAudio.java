@@ -5,7 +5,7 @@ package com.example.android.geofence ;
 public class GeofenceAudio
 {
 
-   private String id ;
+   private int id ;
    private double latitude ;
    private double longitude ;
    private float radius ;
@@ -14,8 +14,9 @@ public class GeofenceAudio
    private String track ;  
    private OnComplete onComplete ;
 
-   private GeofenceAudio()
+   private GeofenceAudio(int id)
    {
+      this.id = id ;
    }
 
    public boolean hasOnComplete()
@@ -31,14 +32,14 @@ public class GeofenceAudio
 
    }
 
-   public class Builder
+   public static class Builder
    {
      
      private GeofenceAudio geofenceAudio ;
 
-     public Builder()
+     public Builder(int id)
      {
-       this.geofenceAudio = new GeofenceAudio() ;
+       this.geofenceAudio = new GeofenceAudio(id) ;
        //TODO set defaults
      }
     

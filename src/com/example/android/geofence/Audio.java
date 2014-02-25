@@ -2,27 +2,27 @@ package com.example.android.geofence ;
 
 public class Audio implements IGeofenceVisitable{
 
-  private final String id ;
+  private final int id ;
   private final String track ;
-  private final boolean loop ;
+  private final OnComplete onComplete ;
 
-  public Audio(String id, String track)
+  public Audio(int id, String track)
   {    
       this.id = id ;
       this.track = track ;
-      this.loop = false ;
+      this.onComplete = null ;
 
   }
 
-  public Audio(String id, String track, boolean loop)
+  public Audio(int id, String track, OnComplete onComplete)
   {
       this.id = id ;
       this.track = track ;
-      this.loop = loop ;
+      this.onComplete = onComplete ;
 
   }
 
-  public String getId(){ 
+  public int getId(){ 
       return this.id ; 
   } 
  
@@ -31,8 +31,8 @@ public class Audio implements IGeofenceVisitable{
 
   }
 
-  public boolean getLoop(){
-     return this.loop ;
+  public OnComplete getOnComplete(){
+     return this.onComplete ;
   }
 
   @Override
@@ -45,7 +45,7 @@ public class Audio implements IGeofenceVisitable{
   @Override
   public String toString()
   {
-    return "audio id:" + this.id + " track:" + this.track + " loop:" + loop ;
+    return "audio id:" + this.id + " track:" + this.track + " onComplete:" + onComplete ;
 
   }
 
