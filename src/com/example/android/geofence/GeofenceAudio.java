@@ -19,6 +19,46 @@ public class GeofenceAudio
       this.id = id ;
    }
 
+   public int getId()
+   {
+      return this.id ;
+   }
+
+   public double getLatitude()
+   {
+      return this.latitude ;
+   }
+
+   public double getLongitude()
+   {
+      return this.longitude ;
+   }
+
+   public float getRadius()
+   {
+      return this.radius ;
+   }
+
+   public long getDuration()
+   {
+      return this.duration ;
+   }
+
+   public int getTransitions()
+   {
+      return this.transitions ;
+   }
+
+   public String getTrack()
+   {
+      return this.track ;
+   }
+
+   public OnComplete getOnComplete()
+   {
+      return this.onComplete ;
+   }
+
    public boolean hasOnComplete()
    {
       if(this.onComplete != null ) 
@@ -29,6 +69,22 @@ public class GeofenceAudio
       {
          return false ;
       }	
+
+   }
+
+   @Override 
+   public String toString()
+   {
+      String requiredFields =  "id:" + this.id  + " latitude:" + this.latitude + " longitude:" + longitude + " radius:" + radius + " duration: " + duration + " transitions: " + transitions + " track: " + track ;
+
+     if(this.onComplete != null)
+     {
+        return requiredFields + onComplete ;
+     }
+     else
+     {
+        return requiredFields ;
+     }
 
    }
 

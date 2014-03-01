@@ -14,7 +14,14 @@ public class OnComplete implements IGeofenceVisitable{
   {
     this.visitable = visitable ;
   }
- 
+
+  @Override
+  public String toString()
+  {
+    return "onComplete for Class:" + this.visitable.getClass() + "\n" + this.visitable ;
+  }
+
+  @Override
   public void accept(IGeofenceVisitor geofenceVisitor)
   {
     

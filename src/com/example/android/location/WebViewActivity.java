@@ -65,6 +65,9 @@ import com.example.android.geofence.GeofenceDialogFragment ;
 import com.example.android.geofence.Dialog ;
 import com.example.android.geofence.Audio ;
 import com.example.android.geofence.Option ;
+import com.example.android.geofence.Convo ;
+import com.example.android.geofence.GeofenceAudio ;
+import com.example.android.geofence.ConvoJSONParser ;
 import android.app.FragmentManager ;
 
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -80,6 +83,8 @@ import android.net.ConnectivityManager ;
 import android.net.NetworkInfo ;
 import android.os.AsyncTask ;
 import java.io.IOException ;
+import java.text.ParseException ;
+import java.util.Iterator ;
 
 
 public class WebViewActivity extends ActionBarActivity
@@ -91,7 +96,7 @@ implements
 
 
 {
-
+   private boolean mIsInFront ;
    private LocationClient mLocationClient;
    private LocationRequest mLocationRequest;
    boolean mUpdatesRequested = false;
@@ -132,15 +137,17 @@ implements
 
    // Store the list of geofences to remove
    private List<String> mGeofenceIdsToRemove;
-  
+    
    private SoundPool mSoundPool ;
    private HashMap mSoundMap ;
+   private HashMap<String, Convo> mConvos ;
    private HashSet mSoundLoadedMap ;
    private MediaPlayer mPlayer ;  
    private MediaPlayer mPlayer2 ;  
    private boolean mBackgroundAudioServiceRunning = false ;
    private BackgroundAudioService mBackgroundAudioService ;
    private boolean mIsBound = false ;
+   private Convo mActiveConvo = null  ;
 
    private ServiceConnection mBackgroundAudioServiceConnection = new ServiceConnection() {
       public void onServiceConnected(ComponentName className, IBinder service) {
@@ -262,12 +269,13 @@ implements
             }
         });
        
-      
+        mConvos = new HashMap<String, Convo>() ;
         // mSoundMap.put(4, mSoundPool.load(this, R.raw.radio6, 1));
 
 	// mPlayer =  MediaPlayer.create(this, R.raw.factory) ;
 	// mPlayer2 = MediaPlayer.create(this, R.raw.sleepaway) ;
       
+        
      	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
      	// startAudioIntent.setAction(BackgroundAudioService.ACTION_PLAY) ;
         bindService(startAudioIntent, mBackgroundAudioServiceConnection, Context.BIND_AUTO_CREATE);
@@ -316,6 +324,7 @@ implements
     public void onPause() {
 
         super.onPause();
+	mIsInFront = false ;
         // Save the current setting for updates
         mEditor.putBoolean(LocationUtils.KEY_UPDATES_REQUESTED, mUpdatesRequested);
         mEditor.commit();
@@ -354,6 +363,23 @@ implements
 
 	savedInstanceState.putStringArrayList("mCurrentGeofenceIds", mCurrentGeofenceIds) ;
 
+
+        ArrayList<String> convoStringArray = new ArrayList<String>() ;
+
+        if (mConvos != null && mConvos.size() > 0)
+	{
+             for( Iterator<Convo> i = mConvos.values().iterator() ; i.hasNext();)
+	     {
+		Convo convo = i.next() ;
+                Log.d(GeofenceUtils.APPTAG, "onSavedInstanceState saving convo: " + convo.getName() ) ;
+		convoStringArray.add(convo.toJSONString()) ;
+
+	     }
+	     savedInstanceState.putStringArrayList("mConvos", convoStringArray) ;
+
+	}
+   
+
      }
     
      super.onSaveInstanceState(savedInstanceState);
@@ -379,6 +405,29 @@ implements
 
 	   }
        }
+
+       // TODO get mConvos from getJSONString and parse from JSON Str using getStingArray
+        ArrayList<String> convoStringArray = savedInstanceState.getStringArrayList("mConvos");
+        if(convoStringArray != null && convoStringArray.size() > 0  )
+	{
+            for(Iterator<String> i = convoStringArray.iterator() ; i.hasNext();)
+	    {
+                String convoStr = i.next() ;
+		try
+		{
+			Convo convo = ConvoJSONParser.parseConvo(convoStr) ;
+                	mConvos.put(convo.getName(), convo) ;
+		}catch(ParseException e)
+		 {
+			Log.e(GeofenceUtils.APPTAG, "Could not recover convo state for convoStr " + convoStr ) ;
+		 }
+
+	    }
+
+	}
+
+
+
    }
 
    @Override
@@ -386,6 +435,7 @@ implements
    {
 
       super.onResume();
+      mIsInFront = true ;
 
       // If the app already has a setting for getting location updates, get it
       if (mPrefs.contains(LocationUtils.KEY_UPDATES_REQUESTED)) 
@@ -509,7 +559,7 @@ webview.loadUrl("javascript:getLocation();");
 public void framemarkers()
 {
 
- Toast.makeText(this,"Framemarkers called",Toast.LENGTH_SHORT).show();
+  Toast.makeText(this,"Framemarkers called",Toast.LENGTH_SHORT).show();
   Intent intent = new Intent(this, com.example.android.framemarkers.FrameMarkers.class);
 
   startActivity(intent);
@@ -568,6 +618,8 @@ public void framemarkers()
 	       {
 	          Geofence gf = mCurrentGeofences.get(i) ;
 	          String trackID = gf.getRequestId() ;
+		  if(trackID.startsWith("CONVO")) return ;
+
 		  //  get SimpleGeofence object and lon/lat 
                   SimpleGeofence sgf = mGeofencePrefs.getGeofence(trackID);
 		  boolean varyVolume = sgf.getVaryVolume() ;
@@ -681,150 +733,58 @@ private boolean servicesConnected() {
 
       }
 	
-     private void addConversationGeofences(String conversationJSONStr)
+     private void addConversationGeofences(String conversationsJSONStr)
      {
 
-	if(conversationJSONStr == null) return ;
-        JSONArray jArray = null ;
-        Log.d(GeofenceUtils.APPTAG, "adding ConversationGeofences: " + conversationJSONStr) ;
+        Log.d(GeofenceUtils.APPTAG, "adding Conversations geofences: " + conversationsJSONStr) ;
 
-    	try {
+	Convo[] conversations ;
 
-        	JSONObject jBackgrounds = new JSONObject(conversationJSONStr);	
-	
-        	jArray = jBackgrounds.getJSONArray("conversations");
-
-    	}catch (JSONException e) 
+        try
 	{
-		Log.e(GeofenceUtils.APPTAG, "Error parsing conversations JSON Str"+ e) ;
-		return ;
+ 		conversations = ConvoJSONParser.parseConvoArray(conversationsJSONStr) ;
+		Log.d(GeofenceUtils.APPTAG, "parsed conversations string into " + conversations.length) ;
 
-	}
+	}catch (ParseException e)
+	 {
+	   Log.e(GeofenceUtils.APPTAG, e.getMessage()) ;
+           Toast.makeText(this, "Could not parse conversation file",  Toast.LENGTH_LONG).show();
+           return ; 
+	 }
 
-	for (int i=0; i < jArray.length(); i++)
-	{
-                JSONObject conversationObject = null;
-	        JSONObject geofenceAudioObject = null;
+         for(int i = 0 ; i < conversations.length ; i++)
+	 {
+            Convo convo = conversations[i] ;
+	    Log.d(GeofenceUtils.APPTAG, "processing Convo: " + convo ) ;
+            String convoName = convo.getName() ;
+	    GeofenceAudio gfAudio = convo.getGeofenceAudio() ;
+	    
 
-    		try {
-        		conversationObject = jArray.getJSONObject(i);
-                        String name = conversationObject.getString("name") ;            
-			geofenceAudioObject = conversationObject.getJSONObject("geofence_audio");  
-        		// Pulling items from the array
-			if(geofenceAudioObject!=null)
-			{ 
-			        // process tag geofence_audio
-        			int id = geofenceAudioObject.getInt("id");
-        			double lat = geofenceAudioObject.getDouble("lat");
-        			double lon = geofenceAudioObject.getDouble("lon");
-        			float radius = (float)geofenceAudioObject.getDouble("radius");
-        			long duration = geofenceAudioObject.getLong("duration");
-                                JSONArray transitionsArray = geofenceAudioObject.getJSONArray("transitions") ;
-				int transitions = 0;
-				for(int j=0; j < transitionsArray.length() ; j++)
-				{
-					String transitionStr = transitionsArray.getString(j) ;
-					int transition = 0 ;
-				        if("ENTER".equals(transitionStr))
-							transition = Geofence.GEOFENCE_TRANSITION_ENTER ;
-					else if("EXIT".equals(transitionStr))
-							transition = Geofence.GEOFENCE_TRANSITION_EXIT ;
+            SimpleGeofence geofence = new SimpleGeofence(
+            "CONVO_" + convoName,
+            gfAudio.getLatitude(),
+            gfAudio.getLongitude(),  
+            gfAudio.getRadius(), 
+            gfAudio.getDuration(), // expiration time
+            gfAudio.getTransitions() );
+
+            mConvos.put("CONVO_" + convoName, convo) ;
+       	    mGeofencePrefs.setGeofence(convoName, geofence);
+            mCurrentGeofences.add(geofence.toGeofence());
+	 }			         	
 				
+       // Start the request. Fail if there's already a request in progress
+        try {
+               // add geofences
 
-					transitions = transitions | transition ;
-				}
+	       mGeofenceRequester.addGeofences(mCurrentGeofences);
+	       Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
 
-				String track = geofenceAudioObject.getString("track");
-				boolean loop = geofenceAudioObject.getBoolean("loop") ;
-                                boolean varyVolume = geofenceAudioObject.getBoolean("vary_volume") ;
-                                JSONObject onComplete = geofenceAudioObject.getJSONObject("on_complete") ;
-                                if(onComplete==null)
-				{
-					Log.e(GeofenceUtils.APPTAG, "Error Invalid geofenceAudio object: no OnComplete object") ; 
-				        // TODO throw ParseException
-				}
-
-				Log.d(GeofenceUtils.APPTAG, "parsing onComplete") ;  
-				JSONObject dialog = onComplete.getJSONObject("dialog") ;
-				Log.d(GeofenceUtils.APPTAG, "parsing dialog") ;  
-			 	JSONArray optionsArray = dialog.getJSONArray("options") ;
-				Log.d(GeofenceUtils.APPTAG, "parsing optionsArray") ;
-			        
-				Option[] options = new Option[optionsArray.length()] ;
-                                        
-				if(options==null)
-				{
-                                  Log.e(GeofenceUtils.APPTAG, "Error Invalid dialog object in conversation: options array is null. Dialogs should always have some options");
-				 // TODO throw new ParseException
-
-				}
-					
-                                        
-				for(int k = 0 ; k < optionsArray.length() ; k++ )
-				{
-                                    JSONObject optionObj = optionsArray.getJSONObject(k) ;
-				    String optionStr = optionObj.getString("option") ;
-                                    JSONObject audioObj = optionObj.getJSONObject("audio") ;
-				    String audioTrackId = audioObj.getString("id") ;
-				    String audioTrack = audioObj.getString("track") ;
-				    JSONObject audioTrackOnComplete = audioObj.getJSONObject("on_complete") ;
-				    if(audioTrackOnComplete != null)
-				    {
-                                        JSONObject nextAudio = audioTrackOnComplete.getJSONObject("audio") ;
-
-
-				    }
-				    Audio audio = new Audio(audioTrackId, audioTrack) ;
-				    Option option = new Option(optionStr, audio) ;
-                                    options[k] = option ; 
-                                    Log.d(GeofenceUtils.APPTAG, audioTrack) ;
-				}
-
-                               	Dialog dialogObj = new Dialog(options) ;
-
-
-                               // TODO handle onComplete
-		 		Log.d(GeofenceUtils.APPTAG, "Parsed conversation geofence audio object: id: " + id +	
-				" lat: " + lat + " lon:" + lon + " radius:" + radius + 
-				" duration:" + duration + " transitions: " + transitions + " track:" + track + 
-				" loop:" + loop + " vary_volume:" + varyVolume + "onComplete: " + onComplete ) ;
-
-                            /*
-	                        SimpleGeofence geofence = new SimpleGeofence(
-                                 track,
-                                 lat, // Latitude
-            			 lon,  // Longitude
-            			 radius, // radius
-            			 // expiration time
-            			 duration,
-				 loop,
-				 varyVolume,
-            			 transitions);
-                                // TODO set stored prefs values for track, loop, vary_volume
-            			mGeofencePrefs.setGeofence(track, geofence);
-       	    			mCurrentGeofences.add(geofence.toGeofence());
-			      */   	
-				
-		        }	
-			else
-			{
-				Log.e(GeofenceUtils.APPTAG, "geofenceAudio object is null") ;
-			}
-    		    }catch (JSONException e) {
-        	   	   Log.e(GeofenceUtils.APPTAG, "Error parsing JSON geofence audio object " + geofenceAudioObject + e ) ;	
-    			}
-	}
-           // Start the request. Fail if there's already a request in progress
-           try {
-               // Try to add geofences
-               // TODO add new ConversationGeofence mGeofenceRequester.addGeofences(mCurrentGeofences);
-	       // Log.d(GeofenceUtils.APPTAG, "requesting adding of geofence list items") ;
-
-               } catch (UnsupportedOperationException e) {
+            } catch (UnsupportedOperationException e) 
+	      {
                  // Notify user that previous request hasn't finished.
-                 Toast.makeText(this, R.string.add_geofences_already_requested_error,
-                        Toast.LENGTH_LONG).show();
-                 }
+                 Toast.makeText(this, R.string.add_geofences_already_requested_error,  Toast.LENGTH_LONG).show();
+              }
       
        
     }
@@ -1119,64 +1079,108 @@ private boolean servicesConnected() {
          * @param context A Context for this component
          * @param intent The Intent containing the transition
          */
-        private void handleGeofenceTransition(Context context, Intent intent) {
+        private void handleGeofenceTransition(Context context, Intent intent) 
+	{
 
-               Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringExtra("TRANSITION_TYPE") );
-               Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringArrayExtra("GEOFENCE_IDS") );
+           Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringExtra("TRANSITION_TYPE") );
+           Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver:handleGeofenceTransition: " + intent.getStringArrayExtra("GEOFENCE_IDS") );
 	      
-	      String transitionType = intent.getStringExtra("TRANSITION_TYPE") ;
-	      String[] triggerGeofenceIds = intent.getStringArrayExtra("GEOFENCE_IDS") ;
+	   String transitionType = intent.getStringExtra("TRANSITION_TYPE") ;
+	   String[] triggerGeofenceIds = intent.getStringArrayExtra("GEOFENCE_IDS") ;
+              
+	   for(int i = 0 ; i < triggerGeofenceIds.length ; i++)
+           {
+	      String geofenceId = triggerGeofenceIds[i] ;
+	      Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: " + geofenceId ) ;
 
-	      for(int i = 0 ; i < triggerGeofenceIds.length ; i++)
-              {
+              if(geofenceId.startsWith("CONVO")) // TODO not good solution need to get a geofence convo type somehow 
+	      {      
+		   Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: processing convo " + geofenceId) ;
+		   handleConversationTransition(geofenceId, transitionType, context) ; 
+	      }
+	      else 
+	      {
+			   Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: processing background audio" + geofenceId ) ;
+			   handleBackgroundAudioTransition(geofenceId, transitionType) ;
+	      }
+            }
 
-	        String geofenceId = triggerGeofenceIds[i] ;
-		Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition: " + geofenceId ) ;
+	 }
 
-                SimpleGeofence sgf = mGeofencePrefs.getGeofence(geofenceId);
-                boolean looping = sgf.getLooping() ; 
-
-                float volume = 0.01f ;
-
-                // TODO getCurrentLocation 
-		if(mLocationClient != null && mLocationClient.isConnected())
-		{
-		   Location location = mLocationClient.getLastLocation() ;
-		   volume = getVolumeFromDistanceBetween(location, sgf) ;
-		   Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition VOLUME: " + volume);
-                }
-
-
-	     	 if("Entered".equals(transitionType))
-	      	 {
-		        Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition ENTERED: " + geofenceId ) ;
-     			if(mIsBound)
-     			{
-        			if(mBackgroundAudioService!=null)
-				{	
-	        		   mBackgroundAudioService.play(geofenceId, looping, volume) ; 
-	                	   Log.d(GeofenceUtils.APPTAG, "playing audio: " + geofenceId + " with looping:" + looping);
-				}
-     			}
-
-        		//      GeofenceDialogFragment alert = new GeofenceDialogFragment();
-			//      alert.show(getFragmentManager(), "GeofenceEventFragment") ;
-	           }
-		   else if("Exited".equals(transitionType))
+         private void handleConversationTransition(String geofenceId, String transitionType, Context context)
+	 {
+	    if("Entered".equals(transitionType))
+	    {
+		   // TODO if entered set as current conversation overriding any existing conversation object
+		   // TODO if activity visible go on to activate current conversation
+                   
+		   mActiveConvo = mConvos.get(geofenceId) ;
+		   
+		   if(mIsInFront && mActiveConvo != null)
 		   {
-		        Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition EXITED: " + geofenceId ) ;
-     			if(mIsBound)
-     			{
-        			if(mBackgroundAudioService!=null)
-				{	
-	        		   mBackgroundAudioService.stop(geofenceId) ;
-			  	   Log.d(GeofenceUtils.APPTAG, "stop audio: " + geofenceId);
-				}
-     			}
+                      // TODO visit the Convo using a Visitor implementation
 
+                       Toast.makeText(context, "ACTIVE Convo:" + mActiveConvo.getName(), Toast.LENGTH_SHORT).show();
 		   }
-       	     }
-       }
+
+
+	    }
+            else if("Exited".equals(transitionType))
+            {
+
+		   mActiveConvo = null ; 
+
+
+	    }
+
+	 }
+
+
+	 private void handleBackgroundAudioTransition(String geofenceId, String transitionType)
+	 {
+            SimpleGeofence sgf = mGeofencePrefs.getGeofence(geofenceId);
+            boolean looping = sgf.getLooping() ;  // TODO subclass SimpleGeofence  
+
+            float volume = 0.01f ;
+
+	    if(mLocationClient != null && mLocationClient.isConnected())
+	    {
+               Location location = mLocationClient.getLastLocation() ;
+	       volume = getVolumeFromDistanceBetween(location, sgf) ;
+	       Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition VOLUME: " + volume);
+            }
+
+
+	    if("Entered".equals(transitionType))
+	    {
+               Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition ENTERED: " + geofenceId ) ;
+     	       if(mIsBound)
+     	       {
+                  if(mBackgroundAudioService!=null)
+		  {	
+	             mBackgroundAudioService.play(geofenceId, looping, volume) ; 
+	             Log.d(GeofenceUtils.APPTAG, "playing audio: " + geofenceId + " with looping:" + looping);
+		  }
+     	       }
+
+               //   TODO this goes into Visitor GeofenceDialogFragment alert = new GeofenceDialogFragment();
+	       //   alert.show(getFragmentManager(), "GeofenceEventFragment") ;
+	    }
+            else if("Exited".equals(transitionType))
+	    {
+	       Log.d(GeofenceUtils.APPTAG, "GeofenceSampleReceiver.handleGeofenceTransition EXITED: " + geofenceId ) ;
+     	       if(mIsBound)
+     	       {
+                  if(mBackgroundAudioService!=null)
+		  {	
+	             mBackgroundAudioService.stop(geofenceId) ;
+	             Log.d(GeofenceUtils.APPTAG, "stop audio: " + geofenceId);
+		  }
+     	       }
+
+            }
+       	 }
+       
 
         /**
          * Report addition or removal errors to the UI, using a Toast

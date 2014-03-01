@@ -10,16 +10,62 @@ import com.google.android.gms.location.Geofence;
 public class ConvoJSONParser
 {
  
-   private final String JSONString ;
 
-   public ConvoJSONParser(String JSONString){
-      this.JSONString = JSONString ;
-      
-   }
-
-   public Convo parseConvo(JSONObject conversationObject) throws ParseException
+   public static Convo[] parseConvoArray(String conversationsJSONStr) throws ParseException
    {
-      if(this.JSONString == null ) nullInput("ConvoJSONParser not initialized with JSON String") ;
+        JSONArray conversationsArray ;
+	try
+	{
+
+           JSONObject conversationObject = new JSONObject(conversationsJSONStr) ;
+           conversationsArray = conversationObject.getJSONArray("conversations") ;
+        }catch(JSONException e)
+	 {
+            throw new ParseException("Error parsing conversations string into JSON Array: " + e.getMessage(), 0 ) ;
+
+	 }
+
+	Convo[] convos = new Convo[conversationsArray.length()] ;
+
+
+        
+	for(int i = 0 ; i < conversationsArray.length() ; i++ )
+	{
+	   try
+	   {
+	     convos[i] = parseConvo(conversationsArray.getJSONObject(i));
+	   
+	   }catch(JSONException e)
+	    {
+ 		throw new ParseException("Error parsing conversations Array object: " + e.getMessage(), 0) ;
+	    }
+	}
+
+
+	return convos ;
+
+
+   }
+   
+   
+   
+   
+   public static Convo parseConvo(String conversationObjectString) throws ParseException
+   {
+      
+          try
+	  {
+             JSONObject convoObj = new JSONObject(conversationObjectString) ;
+	     return parseConvo(convoObj) ;
+	  }catch(JSONException e)
+	   {
+	      throw new ParseException("Unexpected Error parsing Conversation JSON String " + e.getMessage(), 0 ) ;
+	   }
+
+   }
+   
+   public static Convo parseConvo(JSONObject conversationObject) throws ParseException
+   {
       if(conversationObject == null) nullInput("conversation object not intialised") ;
 
       try 
@@ -40,17 +86,17 @@ public class ConvoJSONParser
 
    }
 
-   private void missingKey(String key) throws ParseException
+   private static void missingKey(String key) throws ParseException
    {
       throw new ParseException("object must have key \"" + key + "\"", 0 ) ;
    }
 
-   private void nullInput(String missingInput) throws ParseException
+   private static void nullInput(String missingInput) throws ParseException
    {
       throw new ParseException("Missing input: " + missingInput, 0) ;
    }
 
-   private boolean isValidGeofenceObject(JSONObject geofenceAudioObject)
+   private static boolean isValidGeofenceObject(JSONObject geofenceAudioObject)
    {
       return geofenceAudioObject.has("id") && 
              geofenceAudioObject.has("lat") &&
@@ -62,7 +108,7 @@ public class ConvoJSONParser
 
    }
 
-   private GeofenceAudio parseGeofenceAudio(JSONObject geofenceAudioObject) throws ParseException
+   private static GeofenceAudio parseGeofenceAudio(JSONObject geofenceAudioObject) throws ParseException
    {
 
        if(geofenceAudioObject == null) nullInput(" GeofenceAudioObject" ) ;
@@ -120,7 +166,7 @@ public class ConvoJSONParser
    }
 
 
-   private OnComplete parseOnComplete(JSONObject onCompleteObj) throws ParseException, JSONException
+   private static OnComplete parseOnComplete(JSONObject onCompleteObj) throws ParseException, JSONException
    {
        if(onCompleteObj.has("dialog"))
        {
@@ -140,7 +186,7 @@ public class ConvoJSONParser
 
    }
 
-   private Dialog parseDialog(JSONObject dialogObj) throws ParseException, JSONException
+   private static Dialog parseDialog(JSONObject dialogObj) throws ParseException, JSONException
    {
       if(!dialogObj.has("options")) throw new ParseException("Invalid dialog object: " + dialogObj, 1) ; 
       
@@ -158,7 +204,7 @@ public class ConvoJSONParser
       return new Dialog(options) ;
    }
 
-   private Audio parseAudio(JSONObject audioObj) throws ParseException, JSONException
+   private static Audio parseAudio(JSONObject audioObj) throws ParseException, JSONException
    {
         
         if(!audioObj.has("id") || ! audioObj.has("track")) throw new ParseException("Invalid audio object: " + audioObj, 1) ;
@@ -177,7 +223,7 @@ public class ConvoJSONParser
 	}
    }
 
-   private Option parseOption(JSONObject optionObj) throws ParseException, JSONException
+   private static Option parseOption(JSONObject optionObj) throws ParseException, JSONException
    {
       if(!optionObj.has("option") || !optionObj.has("audio"))
       {

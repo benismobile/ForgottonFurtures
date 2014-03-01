@@ -77,7 +77,41 @@ public class SimpleGeofence {
 	this.mVaryVolume = varyVolume ;
 
     }
-    // Instance field getters
+
+
+    public SimpleGeofence(
+            String geofenceId,
+            double latitude,
+            double longitude,
+            float radius,
+            long expiration,
+            int transition) {
+        // Set the instance fields from the constructor
+
+        // An identifier for the geofence
+        this.mId = geofenceId;
+
+        // Center of the geofence
+        this.mLatitude = latitude;
+        this.mLongitude = longitude;
+
+        // Radius of the geofence, in meters
+        this.mRadius = radius;
+
+        // Expiration time in milliseconds
+        this.mExpirationDuration = expiration;
+
+        // Transition type
+        this.mTransitionType = transition;
+        // derive expiration time
+        Time now = new Time() ;
+	now.setToNow() ;
+        this.mExpirationTime = now.toMillis(false) + mExpirationDuration ;
+        
+
+    }
+
+
     public SimpleGeofence(
             String geofenceId,
             double latitude,
