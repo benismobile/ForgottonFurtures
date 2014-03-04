@@ -2,6 +2,7 @@ package com.example.android.location ;
 
 import android.app.Service ;
 import android.media.MediaPlayer ;
+import android.media.MediaPlayer.OnCompletionListener ;
 import android.content.Intent ;
 import android.app.PendingIntent ;
 import android.util.Log ;
@@ -18,7 +19,7 @@ import com.example.android.geofence.GeofenceUtils ;
 import java.lang.CharSequence ;
 import java.util.HashMap ;
 
-public class BackgroundAudioService extends Service implements MediaPlayer.OnErrorListener {
+public class BackgroundAudioService extends Service implements MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
     
     public static final String ACTION_PLAY = "com.example.android.ACTION_PLAY" ;
     public static final String EXTRA_TRACK = "com.example.android.TRACK" ;
@@ -27,6 +28,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     private Notification notification ;
     private final IBinder mBinder = new LocalBinder();
     private String track ;
+    private MediaPlayer currentForegroundPlayer ; 
     private HashMap<String, MediaPlayer> playing = new HashMap<String, MediaPlayer>() ;
 
     @Override 
@@ -61,7 +63,13 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 	return true;
     }
 
-   
+    @Override
+    public void onCompletion(MediaPlayer mp)
+    {
+	mp.release() ;
+	mp = null ;
+    }
+
     @Override
     public void onDestroy() {
         // Cancel the persistent notification.
@@ -110,6 +118,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
         
         MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
         // TODO add onCompleteListener so can remove from Playing 
+	// TODO work out how to add track info to media player so we can remove from playing 
 	if(! aMediaPlayer.isPlaying())
 	{
 	   aMediaPlayer.setLooping(looping);
@@ -124,7 +133,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     {
         
         MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
-        // TODO add onCompleteListener so can remove from Playing 
+        aMediaPlayer.setOnCompletionListener(this) ;
+	
 	if(! aMediaPlayer.isPlaying())
 	{
 	   aMediaPlayer.setLooping(looping);
@@ -134,13 +144,34 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 
     }
    
+    public void playForeground(String track, MediaPlayer.OnCompletionListener completionListener, MediaPlayer.OnErrorListener errorListener)
+    {
+
+        MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
+        aMediaPlayer.setOnCompletionListener(completionListener) ;
+	aMediaPlayer.setOnErrorListener(errorListener); 
+
+	if(! aMediaPlayer.isPlaying())
+	{
+	  
+	   aMediaPlayer.start() ;
+	   this.currentForegroundPlayer = aMediaPlayer ; // keep a reference to stop over eager Garbage Collection
+
+	}
+
+    }
+
+
+
+
     
 
     public void play(String track)
     {
         
         MediaPlayer  aMediaPlayer = MediaPlayer.create(this, getTrackId(track)) ; 
-        // TODO add onCompleteListener so can remove from Playing 
+        aMediaPlayer.setOnCompletionListener(this) ;
+
 	if(! aMediaPlayer.isPlaying())
 	{
 	  
@@ -196,6 +227,22 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
        else if("kalimba".equals(track))
        {
 	  return R.raw.kalimba ;
+       }
+       else if("convo1ablock1".equals(track))
+       {
+	  return R.raw.convo1ablock1 ;
+       }
+       else if("convo1ablock2".equals(track))
+       {
+	  return R.raw.convo1ablock2 ;
+       }
+       else if("convo1ablock3".equals(track))
+       {
+	  return R.raw.convo1ablock3 ;
+       }
+       else if("convo1ablock4".equals(track))
+       {
+	  return R.raw.convo1ablock4 ;
        }
 
        return 0 ;

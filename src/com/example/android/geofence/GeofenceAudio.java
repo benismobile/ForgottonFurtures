@@ -2,7 +2,7 @@ package com.example.android.geofence ;
 
 
 
-public class GeofenceAudio
+public class GeofenceAudio implements IGeofenceVisitable
 {
 
    private int id ;
@@ -70,6 +70,12 @@ public class GeofenceAudio
          return false ;
       }	
 
+   }
+
+   @Override
+   public void accept(IGeofenceVisitor gfVisitor)
+   {
+      gfVisitor.visit(this) ;
    }
 
    @Override 

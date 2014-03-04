@@ -3,7 +3,7 @@ package com.example.android.geofence ;
 import org.json.JSONObject ;
 import java.text.ParseException ;
 
-public class Convo {
+public class Convo implements IGeofenceVisitable {
 
   private  String name ;
   private  GeofenceAudio geofenceAudio ;
@@ -45,6 +45,13 @@ public class Convo {
   {
 
     return this.geofenceAudio ;
+  }
+
+  @Override
+  public void accept(IGeofenceVisitor gfVisitor)
+  {
+     gfVisitor.visit(this) ;
+
   }
 
   @Override
