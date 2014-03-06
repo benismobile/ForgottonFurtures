@@ -30,6 +30,15 @@ public class Audio implements IGeofenceVisitable{
      return this.track ;
 
   }
+  
+  public boolean hasOnComplete(){
+     
+     if(this.onComplete!=null) return true ;
+     
+     return false ;
+
+  }
+
 
   public OnComplete getOnComplete(){
      return this.onComplete ;

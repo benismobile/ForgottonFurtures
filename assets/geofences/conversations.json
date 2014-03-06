@@ -19,14 +19,14 @@
                     "dialog": {
                         "options": [
                             {
-                                "option": "I’m from the other side of the Rift, pleased to meet you.",
+                                "option": "I\u0027m from the other side of the Rift, pleased to meet you.",
                                 "audio": {
                                     "id": 1,
                                     "track": "convo1ablock4"
                                 }
                             },
                             {
-                                "option": "What’s it to you Tin Man?",
+                                "option": "What\u0027s it to you Tin Man?",
                                 "audio": {
                                     "id": 2,
                                     "track": "convo1ablock2",

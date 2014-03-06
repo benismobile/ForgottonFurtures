@@ -31,6 +31,7 @@ public class GeofenceDialogFragment extends DialogFragment {
           for(int i = 0 ; i < options.length ; i++ )
 	  {
           	optionsStrings[i] =  options[i].getOption() ;
+		// optionsStrings[i] = optionsStrings[i].toString().replace("'", "\\'");
 	  }
           args.putCharSequenceArray("options", optionsStrings) ;
        }

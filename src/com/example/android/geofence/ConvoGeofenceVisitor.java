@@ -23,16 +23,15 @@ public class ConvoGeofenceVisitor implements IGeofenceVisitor, MediaPlayer.OnCom
   private final Convo convo ;
   private final BackgroundAudioService backgroundAudioService ;
   private OnComplete onComplete ;
-  private Context context ;
   private WebViewActivity.GeofenceSampleReceiver receiver ;
   private WebViewActivity activity;
   private Dialog activeDialog ;
 
-  public ConvoGeofenceVisitor(Convo  convo, BackgroundAudioService backgroundAudioService, Context context, WebViewActivity activity)
+
+  public ConvoGeofenceVisitor(Convo  convo, BackgroundAudioService backgroundAudioService, WebViewActivity activity)
   {
      this.convo = convo ;
      this.backgroundAudioService = backgroundAudioService ;
-     this.context = context ;
      this.activity = activity ;
 
   }
@@ -58,29 +57,24 @@ public class ConvoGeofenceVisitor implements IGeofenceVisitor, MediaPlayer.OnCom
       // this.activity.activateDialog(dialog) ;
       this.activeDialog = dialog ;
 
-      PendingIntent pi = PendingIntent.getActivity(context, 0,
-	   new Intent(context, com.example.android.location.WebViewActivity.class),
+      PendingIntent pi = PendingIntent.getActivity(activity, 0,
+	   new Intent(activity, com.example.android.location.WebViewActivity.class),
       PendingIntent.FLAG_UPDATE_CURRENT);
       Notification notification = new Notification();
       notification.tickerText = "Dialog" ; 
       notification.icon = R.drawable.ic_notification ;
       notification.defaults |= Notification.DEFAULT_VIBRATE ;
       notification.defaults |= Notification.DEFAULT_SOUND   ;
-      notification.setLatestEventInfo(context, "forgotton futures",
+      notification.setLatestEventInfo(this.activity, "forgotton futures",
 			                "Dialog"  , pi);
       NotificationManager mNotificationManager =
-           (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+           (NotificationManager) this.activity.getSystemService(Context.NOTIFICATION_SERVICE);
         
       mNotificationManager.notify(1572, notification);
        
       this.activity.accept(this) ;
   }
 
-  public void visit(Audio audio)
-  {
-     Log.d(GeofenceUtils.APPTAG, "visiting audio" + audio ) ;
-
-  }
 
   public void visit(GeofenceAudio geofenceAudio)
   {
@@ -106,6 +100,26 @@ public class ConvoGeofenceVisitor implements IGeofenceVisitor, MediaPlayer.OnCom
   public void visit(Option option)
   {
      Log.d(GeofenceUtils.APPTAG, "visiting Option: " + option) ; 
+     Audio audio = option.getAudio() ;
+     audio.accept(this) ; 
+  }
+
+  public void visit(Audio audio)
+  {
+     
+     Log.d(GeofenceUtils.APPTAG, "visiting Audio: " + audio) ; 
+     String track = audio.getTrack() ;
+     this.backgroundAudioService.playForeground(track, this, this) ;
+     if(audio.hasOnComplete())
+     {
+        this.onComplete = audio.getOnComplete() ;
+
+     }
+     else
+     {
+        this.onComplete = null ;
+     }
+
 
   }
 

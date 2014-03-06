@@ -155,6 +155,7 @@ implements
    private boolean mIsBound = false ;
    private Convo mActiveConvo = null  ;
    private Dialog mActiveDialog = null ;
+   private GeofenceDialogFragment mActiveDialogFragment = null ;
 //   private boolean dialogActive = false ;
    private WebViewActivity mActivity = this;
   
@@ -203,7 +204,7 @@ implements
 
          GeofenceDialogFragment dialog =  GeofenceDialogFragment.newInstance(mActiveDialog) ; 
          dialog.show(getFragmentManager(), "GeofenceEventFragment") ;
- 	
+         mActiveDialogFragment = dialog ; 	
          Toast.makeText(this,"dialog show?",Toast.LENGTH_SHORT).show();
       }
 
@@ -217,9 +218,11 @@ implements
       Option selectedOption = options[selected] ;
       //TODO create a new visitor object
      
-     ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, this, this ) ;
+     ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, this ) ;
      geofenceVisitor.visit(selectedOption) ;
-
+     mActiveDialogFragment.dismiss() ;
+     mActiveDialogFragment = null ;
+     mActiveDialog = null ;
 
    }
 
@@ -425,6 +428,10 @@ implements
 
 	}
    
+        if(mActiveConvo != null)
+	{
+           savedInstanceState.putString("mActiveConvo", ActiveConvo.toJSONString() ) ;
+	}
 
      }
     
@@ -472,7 +479,7 @@ implements
 
 	}
 
-
+        // restore mActiveConvo
 
    }
 
@@ -498,6 +505,13 @@ implements
 
       LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, mIntentFilter);
   
+      if(mActiveConvo != null)
+      {
+         Toast.makeText(context, "onResume :ACTIVE Convo:" + mActiveConvo.getName(), Toast.LENGTH_SHORT).show();
+         ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, mActivity ) ;
+         geofenceVisitor.visitConvo() ;
+      }
+
 
 
    /*
@@ -1069,7 +1083,7 @@ private boolean servicesConnected() {
      * Define a Broadcast receiver that receives updates from connection listeners and
      * the geofence transition service.
      */
-    public class GeofenceSampleReceiver extends BroadcastReceiver implements IGeofenceVisitable {
+    public class GeofenceSampleReceiver extends BroadcastReceiver  {
         /*
          * Define the required method for broadcast receivers
          * This method is invoked when a broadcast Intent triggers the receiver
@@ -1154,24 +1168,6 @@ private boolean servicesConnected() {
 	 }
 
 
-         @Override
-	 public void accept(IGeofenceVisitor v)
-	 {
-
-           Log.d(GeofenceUtils.APPTAG, "accept ConvoGeofenceVisitor with Dialog" + v.getActiveDialog() ) ;
-	   mActiveDialog = v.getActiveDialog() ; // set ActiveDialog so we can display it in WebViewActivity.onResume()
-	   if(mIsInFront)
-	   {
-              // GeofenceDialogFragment alert = new GeofenceDialogFragment();
-	      // alert.show(getFragmentManager(), "GeofenceEventFragment") ;
-	   }
-           // get Dialog from visitor
-	   // show dialog
-	   // get selected option
-	   // v.visit(option) ;	
-
-	 }
-
 
          private void handleConversationTransition(String geofenceId, String transitionType, Context context)
 	 {
@@ -1184,7 +1180,7 @@ private boolean servicesConnected() {
 		   {
 
                        Toast.makeText(context, "ACTIVE Convo:" + mActiveConvo.getName(), Toast.LENGTH_SHORT).show();
-		       ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, context, mActivity ) ;
+		       ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, mActivity ) ;
 		       geofenceVisitor.visitConvo() ;
 
 		   }
