@@ -59,6 +59,7 @@ import java.io.InputStreamReader ;
 
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
+import android.content.DialogInterface ;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.format.Time ;
 import com.example.android.geofence.GeofenceDialogFragment ;
@@ -71,7 +72,7 @@ import com.example.android.geofence.ConvoJSONParser ;
 import com.example.android.geofence.ConvoGeofenceVisitor ;
 import com.example.android.geofence.IGeofenceVisitable ;
 import com.example.android.geofence.IGeofenceVisitor ;
-
+import com.example.android.geofence.ConvoDialogOnClickListener ;
 import android.app.FragmentManager ;
 
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -96,7 +97,7 @@ implements
    LocationListener,
    GooglePlayServicesClient.ConnectionCallbacks,
    GooglePlayServicesClient.OnConnectionFailedListener,
-   MediaPlayer.OnPreparedListener, IGeofenceVisitable
+   MediaPlayer.OnPreparedListener, IGeofenceVisitable, GeofenceDialogFragment.ConvoDialogListener
    
 
 
@@ -189,50 +190,39 @@ implements
    public void accept(IGeofenceVisitor v) 
    {
       Log.d(GeofenceUtils.APPTAG, "accept ConvoGeofenceVisitor with Dialog" + v.getActiveDialog() ) ;
-      mActiveDialog = v.getActiveDialog() ; // set ActiveDialog so we can display it in WebViewActivity.onResume()
+      this.mActiveDialog = v.getActiveDialog() ; // set ActiveDialog so we can display it in onResume
+     //  final Option[] options = mActiveDialog.getOptions() ;
+          
+      // final Option selectedOption ;
+
       if(mIsInFront)
       {
-         GeofenceDialogFragment alert = new GeofenceDialogFragment();
-         alert.show(getFragmentManager(), "GeofenceEventFragment") ;
+         
+         Log.d(GeofenceUtils.APPTAG, "shpw Dialog:" + this.mActiveDialog ) ;
+        
+
+         GeofenceDialogFragment dialog =  GeofenceDialogFragment.newInstance(mActiveDialog) ; 
+         dialog.show(getFragmentManager(), "GeofenceEventFragment") ;
+ 	
+         Toast.makeText(this,"dialog show?",Toast.LENGTH_SHORT).show();
       }
 
-      // get Dialog from visitor
-      // show dialog
-      // get selected option
-      // v.visit(option) ;	
-
-   }
-
-/*
-   public void activateDialog(Dialog dialog)
-   {
-	this.activeDialog = dialog ;
-	this.dialogActive = true ;
-   }
-
-   public void deactivateDialog()
-   {
-       this.activeDialog = null ;
-       this.dialogActive = false ;
    }
 
    @Override
-   public void accept(ConvoGeofenceVisitor v)
+   public void onDialogClick(int selected)
    {
-     // visitor shoule have set or (re)set the activeDialog to this object
-     if(dialogActive && mIsInFront)
-     {
-        GeofenceDialogFragment alert = new GeofenceDialogFragment();
-        alert.show(getFragmentManager(), "GeofenceEventFragment") ;
-     }
+      Log.d(GeofenceUtils.APPTAG, "onDialogClick selected:" + selected) ;
+      Option[] options = mActiveDialog.getOptions() ;
+      Option selectedOption = options[selected] ;
+      //TODO create a new visitor object
      
-   // get selected option and revisit
-   // this time visitor will set activeDialog to null
-    // v.visit(selectedOption) ;
+     ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, this, this ) ;
+     geofenceVisitor.visit(selectedOption) ;
 
 
    }
-*/
+
 
    @SuppressLint("NewApi")
    @Override
@@ -1172,8 +1162,8 @@ private boolean servicesConnected() {
 	   mActiveDialog = v.getActiveDialog() ; // set ActiveDialog so we can display it in WebViewActivity.onResume()
 	   if(mIsInFront)
 	   {
-              GeofenceDialogFragment alert = new GeofenceDialogFragment();
-	      alert.show(getFragmentManager(), "GeofenceEventFragment") ;
+              // GeofenceDialogFragment alert = new GeofenceDialogFragment();
+	      // alert.show(getFragmentManager(), "GeofenceEventFragment") ;
 	   }
            // get Dialog from visitor
 	   // show dialog

@@ -105,7 +105,7 @@ public class ConvoGeofenceVisitor implements IGeofenceVisitor, MediaPlayer.OnCom
   
   public void visit(Option option)
   {
-     Log.d(GeofenceUtils.APPTAG, "visiting Option") ; 
+     Log.d(GeofenceUtils.APPTAG, "visiting Option: " + option) ; 
 
   }
 
