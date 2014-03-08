@@ -186,6 +186,24 @@ public class ConvoJSONParser
 
    }
 
+   public static Dialog parseDialog(String dialogStr) throws ParseException
+   {
+       try
+       {
+	  JSONObject dialogObj = new JSONObject(dialogStr) ;
+	  return parseDialog(dialogObj) ;
+	
+
+       }catch (JSONException e)
+       {
+          throw new ParseException("Invalid Dialof JSON String:" + e.getMessage()  ,1 ) ;
+
+       }
+      
+
+   }
+
+
    private static Dialog parseDialog(JSONObject dialogObj) throws ParseException, JSONException
    {
       if(!dialogObj.has("options")) throw new ParseException("Invalid dialog object: " + dialogObj, 1) ; 

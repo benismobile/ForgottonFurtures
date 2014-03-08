@@ -154,7 +154,9 @@ implements
    private BackgroundAudioService mBackgroundAudioService ;
    private boolean mIsBound = false ;
    private Convo mActiveConvo = null  ;
+   private boolean mActiveConvoInProgress = false ;
    private Dialog mActiveDialog = null ;
+   private boolean mActiveDialogShowing = false ;
    private GeofenceDialogFragment mActiveDialogFragment = null ;
 //   private boolean dialogActive = false ;
    private WebViewActivity mActivity = this;
@@ -187,25 +189,40 @@ implements
    };
 
 
+
+   @Override
+   public String toJSONString()
+   {
+     if(mActiveConvo!=null)
+      return mActiveConvo.toJSONString() ;
+
+     return "{}" ;
+
+   }
+
    @Override
    public void accept(IGeofenceVisitor v) 
    {
-      Log.d(GeofenceUtils.APPTAG, "accept ConvoGeofenceVisitor with Dialog" + v.getActiveDialog() ) ;
-      this.mActiveDialog = v.getActiveDialog() ; // set ActiveDialog so we can display it in onResume
-     //  final Option[] options = mActiveDialog.getOptions() ;
-          
-      // final Option selectedOption ;
+      Log.d(GeofenceUtils.APPTAG, "WebViewActivity: accept called mIsInFront:" + mIsInFront ) ;
+      mActiveDialog = v.getActiveDialog() ; // set ActiveDialog so we can display it in onResume
 
       if(mIsInFront)
       {
          
-         Log.d(GeofenceUtils.APPTAG, "shpw Dialog:" + this.mActiveDialog ) ;
-        
-
+         Log.d(GeofenceUtils.APPTAG, "WebViewActivity: accept visitor: show Dialog:" + mActiveDialog ) ;
          GeofenceDialogFragment dialog =  GeofenceDialogFragment.newInstance(mActiveDialog) ; 
          dialog.show(getFragmentManager(), "GeofenceEventFragment") ;
-         mActiveDialogFragment = dialog ; 	
-         Toast.makeText(this,"dialog show?",Toast.LENGTH_SHORT).show();
+         mActiveDialogFragment = dialog ;
+	 mActiveDialogShowing = true ;
+	 mEditor.putBoolean("mActiveDialogShowing", true ) ;
+	 mEditor.commit() ;
+	 
+      }
+      else
+      {
+          Log.d(GeofenceUtils.APPTAG, "persisting mActiveDialog to mPrefs" ) ;          
+          mEditor.putString("mActiveDialog", mActiveDialog.toJSONString()) ;
+          mEditor.commit() ;
       }
 
    }
@@ -216,13 +233,18 @@ implements
       Log.d(GeofenceUtils.APPTAG, "onDialogClick selected:" + selected) ;
       Option[] options = mActiveDialog.getOptions() ;
       Option selectedOption = options[selected] ;
-      //TODO create a new visitor object
      
      ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, this ) ;
-     geofenceVisitor.visit(selectedOption) ;
+     // TODO remove comment geofenceVisitor.visit(selectedOption) ;
+     selectedOption.accept(geofenceVisitor) ;
      mActiveDialogFragment.dismiss() ;
      mActiveDialogFragment = null ;
      mActiveDialog = null ;
+     mActiveDialogShowing = false ;
+
+     mEditor.remove("mActiveDialog") ;
+     mEditor.putBoolean("mActiveDialogShowing", false) ;
+     mEditor.commit();
 
    }
 
@@ -239,8 +261,6 @@ implements
             getActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-
-
      webview = new WebView(this);
      setContentView(webview);
      WebSettings webSettings = webview.getSettings();
@@ -251,11 +271,8 @@ implements
      webSettings.setLoadsImagesAutomatically (true) ;
     // WHATEVER YOU DO: DONT USE setAllowFileAccess* ON GINGERBREAB - Causes nasty crach
     // BUT needed to get the local gpx loading to work
-    // webSettings.setAllowFileAccess(true) ;
-    // webSettings.setAllowFileAccessFromFileURLs(true) ;
-      webview.addJavascriptInterface(new WebAppInterface(this),"Android");
+     webview.addJavascriptInterface(new WebAppInterface(this),"Android");
      webview.loadUrl("file:///android_asset/html/threshold.html");
-
 
     mLocationClient = new LocationClient(this, this, this);
     mLocationRequest = LocationRequest.create();
@@ -319,15 +336,12 @@ implements
         });
        
         mConvos = new HashMap<String, Convo>() ;
-        // mSoundMap.put(4, mSoundPool.load(this, R.raw.radio6, 1));
 
-	// mPlayer =  MediaPlayer.create(this, R.raw.factory) ;
-	// mPlayer2 = MediaPlayer.create(this, R.raw.sleepaway) ;
       
         
      	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
-     	// startAudioIntent.setAction(BackgroundAudioService.ACTION_PLAY) ;
         bindService(startAudioIntent, mBackgroundAudioServiceConnection, Context.BIND_AUTO_CREATE);
+        restoreInstanceState(savedInstanceState) ;
 
 
    } // ends onCreate
@@ -348,6 +362,32 @@ implements
         unbindService(mBackgroundAudioServiceConnection);
         mIsBound = false;
     }
+   }
+
+   @Override
+   public void onStop()
+   {
+    super.onStop() ;
+
+    HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
+    if(gfIds != null )
+    {
+      for(Iterator<String> i = gfIds.iterator() ; i.hasNext();)
+      {
+         String id = i.next() ;
+         SimpleGeofence gf = mGeofencePrefs.getGeofence(id) ;
+         Log.d(GeofenceUtils.APPTAG, "onDestroy(): removing geofences" ) ;
+	 mGeofencePrefs.clearGeofence(gf.getId()) ;
+	 mCurrentGeofences.remove(gf.toGeofence()) ;
+
+      }
+      mGeofencePrefs.clearGeofenceIds() ;
+
+    }
+
+      mEditor.remove("mActiveDialog") ;
+      mEditor.putBoolean("mActiveDialogShowing", false) ;
+      mEditor.commit() ;
 
   }
   
@@ -373,6 +413,8 @@ implements
     public void onPause() {
 
         super.onPause();
+	Log.d(GeofenceUtils.APPTAG, "onPause() called") ;
+
 	mIsInFront = false ;
         // Save the current setting for updates
         mEditor.putBoolean(LocationUtils.KEY_UPDATES_REQUESTED, mUpdatesRequested);
@@ -387,7 +429,6 @@ implements
 
         super.onStart();
 
-        mLocationClient.connect();
         
    }
 
@@ -396,12 +437,10 @@ implements
 
       
 
-     if(mCurrentGeofences != null && mCurrentGeofences.size() > 0)
-      {
-   
-	
-        ArrayList<String> currentGeofenceIds = new ArrayList<String>() ;
-
+      if(mCurrentGeofences != null && mCurrentGeofences.size() > 0)
+      {	
+         ArrayList<String> currentGeofenceIds = new ArrayList<String>() ;
+     
 	for(int i = 0 ; i < mCurrentGeofences.size() ; i++)
 	{
 	   Geofence gf = mCurrentGeofences.get(i) ;
@@ -409,31 +448,42 @@ implements
 	   currentGeofenceIds.add(gf.getRequestId() ) ;
 	
 	}
-
+      
 	savedInstanceState.putStringArrayList("mCurrentGeofenceIds", mCurrentGeofenceIds) ;
+      }
+      
+      
 
+      ArrayList<String> convoStringArray = new ArrayList<String>() ;
 
-        ArrayList<String> convoStringArray = new ArrayList<String>() ;
+      if (mConvos != null && mConvos.size() > 0)
+      {
+         for( Iterator<Convo> i = mConvos.values().iterator() ; i.hasNext();)
+	 {
+	    Convo convo = i.next() ;
+            Log.d(GeofenceUtils.APPTAG, "onSavedInstanceState saving convo: " + convo.getName() ) ;
+            convoStringArray.add(convo.toJSONString()) ;
+	 }
+	 savedInstanceState.putStringArrayList("mConvos", convoStringArray) ;
 
-        if (mConvos != null && mConvos.size() > 0)
-	{
-             for( Iterator<Convo> i = mConvos.values().iterator() ; i.hasNext();)
-	     {
-		Convo convo = i.next() ;
-                Log.d(GeofenceUtils.APPTAG, "onSavedInstanceState saving convo: " + convo.getName() ) ;
-		convoStringArray.add(convo.toJSONString()) ;
-
-	     }
-	     savedInstanceState.putStringArrayList("mConvos", convoStringArray) ;
-
-	}
+      }
    
-        if(mActiveConvo != null)
-	{
-           savedInstanceState.putString("mActiveConvo", ActiveConvo.toJSONString() ) ;
-	}
+      if(mActiveConvo != null)
+      {
+         savedInstanceState.putString("mActiveConvo", mActiveConvo.toJSONString() ) ;
+         savedInstanceState.putBoolean("mActivaConvoInProgress", mActiveConvoInProgress) ;
+      }
 
-     }
+      if(mActiveDialog != null)
+      {
+         savedInstanceState.putString("mActiveDialog", mActiveDialog.toJSONString() ) ;
+
+         mEditor.putString("mActiveDialog", mActiveDialog.toJSONString() );
+	 mEditor.putBoolean("mActiveDialogShowing", mActiveDialogShowing ) ;
+         mEditor.commit();
+         Log.d(GeofenceUtils.APPTAG, "onSavedInstanceState saving mActiveDialog: " ) ;
+      }
+      
     
      super.onSaveInstanceState(savedInstanceState);
    }
@@ -441,8 +491,21 @@ implements
 
    public void onRestoreInstanceState(Bundle savedInstanceState) {
     	super.onRestoreInstanceState(savedInstanceState);
-   
+	restoreInstanceState(savedInstanceState) ;
+   } 
+
+   private void restoreInstanceState(Bundle savedInstanceState)
+   {
     // Restore state members from saved instance
+        if(savedInstanceState == null )
+	{
+           Log.d(GeofenceUtils.APPTAG, "restoreInstanceState: savedInstanceState is null") ;
+	   return ;
+
+	}
+     
+     
+     /*
         ArrayList<String> currentGeofenceIds = savedInstanceState.getStringArrayList("mCurrentGeofenceIds");
 	if(currentGeofenceIds != null && currentGeofenceIds.size() > 0 && mCurrentGeofences == null )
 	{
@@ -453,11 +516,15 @@ implements
 	   for(int i = 0 ; i < gfids.length ; i++)
 	   {
 	     String gfID = gfids[i] ;
+             Log.d(GeofenceUtils.APPTAG, "restoreInstanceState gf: " + gfID ) ;
+	     
              SimpleGeofence gf = mGeofencePrefs.getGeofence(gfID);
              mCurrentGeofences.add(gf.toGeofence());
 
 	   }
        }
+
+       */
 
        // TODO get mConvos from getJSONString and parse from JSON Str using getStingArray
         ArrayList<String> convoStringArray = savedInstanceState.getStringArrayList("mConvos");
@@ -470,22 +537,50 @@ implements
 		{
 			Convo convo = ConvoJSONParser.parseConvo(convoStr) ;
                 	mConvos.put(convo.getName(), convo) ;
+                        Log.d(GeofenceUtils.APPTAG, "restoreInstanceState convo: " + convo.getName() ) ;
+			
 		}catch(ParseException e)
 		 {
-			Log.e(GeofenceUtils.APPTAG, "Could not recover convo state for convoStr " + convoStr ) ;
+			Log.e(GeofenceUtils.APPTAG, "restoreInstanceState: Could not recover convo state for convoStringArray " + convoStr ) ;
 		 }
 
 	    }
 
 	}
 
-        // restore mActiveConvo
+        String mActiveConvoStr = savedInstanceState.getString("mActiveConvo") ;
+
+	try
+	{
+                 	
+           Log.d(GeofenceUtils.APPTAG, "restoreInstanceState mActiveConvoStr: " + mActiveConvoStr ) ;
+           mActiveConvo = ConvoJSONParser.parseConvo(mActiveConvoStr) ;
+	   mActiveConvoInProgress = savedInstanceState.getBoolean("mActiveConvoInProgress") ;
+
+	}catch(ParseException e)
+	{
+           Log.w(GeofenceUtils.APPTAG, "restoreInstanceState: Could not recover mActiveConvo from string" + mActiveConvoStr ) ;
+	}
+
+        // restore mActiveDialog
+	String mActiveDialogStr = savedInstanceState.getString("mActiveDialog") ;
+	try
+	{
+	   Log.d(GeofenceUtils.APPTAG, "restoreInstanceState: mActiveDialog: " + mActiveDialogStr ) ;
+	   mActiveDialog = ConvoJSONParser.parseDialog(mActiveDialogStr) ;
+
+	}catch(ParseException e)
+	{
+           Log.w(GeofenceUtils.APPTAG, "restoreInstanceState: Could not parse mActiveDialog from string" + mActiveConvoStr ) ;
+	}
 
    }
 
    @Override
    public void onResume()
    {
+
+      Log.d(GeofenceUtils.APPTAG, "onResume has been called") ;
 
       super.onResume();
       mIsInFront = true ;
@@ -504,64 +599,150 @@ implements
 
 
       LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, mIntentFilter);
-  
-      if(mActiveConvo != null)
+ 
+      // TODO should we test if started already?
+      if(mActiveConvo != null && !mActiveConvoInProgress)
       {
-         Toast.makeText(context, "onResume :ACTIVE Convo:" + mActiveConvo.getName(), Toast.LENGTH_SHORT).show();
+         Toast.makeText(this, "onResume :ACTIVE Convo:" + mActiveConvo.getName(), Toast.LENGTH_SHORT).show();
          ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, mActivity ) ;
          geofenceVisitor.visitConvo() ;
+	 mActiveConvoInProgress = true ;
+      }
+
+      // try to restore mActiveDialog
+      String mActiveDialogStr = mPrefs.getString("mActiveDialog", "NULLString") ;
+      mActiveDialogShowing = mPrefs.getBoolean("mActiveDialogShowing", false) ;
+
+      if(! "NULLString".equals(mActiveDialogStr))
+      {
+         try
+         {
+            Log.d(GeofenceUtils.APPTAG, "onResume: restore mActiveDialog: " + mActiveDialogStr ) ;
+	    mActiveDialog = ConvoJSONParser.parseDialog(mActiveDialogStr) ;
+
+         }catch(ParseException e)
+	   {
+              Log.w(GeofenceUtils.APPTAG, "restoreInstanceState: Could not parse mActiveDialog from string" + mActiveDialogStr ) ;
+	   }
+      }
+      else
+      {
+            Log.d(GeofenceUtils.APPTAG, "onResume: nothing to restore for mActiveDialog: " + mActiveDialogStr ) ;
       }
 
 
+      if(mActiveDialog != null)
+      {
+                  
+         Log.d(GeofenceUtils.APPTAG, "onResume: show Dialog:" + mActiveDialog ) ;
+         GeofenceDialogFragment dialog =  GeofenceDialogFragment.newInstance(mActiveDialog) ; 
+         if(! mActiveDialogShowing)
+	 {
+	    dialog.show(getFragmentManager(), "GeofenceEventFragment") ;
+            mActiveDialogFragment = dialog ;
+	 }
 
-   /*
+      }   
 
       Time now = new Time() ;
       now.setToNow() ;
       long nowMillis = now.toMillis(false) ;
    
-   //TODO get current geofences
-       mGeofence1 = mGeofencePrefs.getGeofence("1");
-      mGeofence2 = mGeofencePrefs.getGeofence("2");
 
-      // the list of current geofences is not empty
-	if(mCurrentGeofences != null && mCurrentGeofences.size() > 0 && mGeofence1 != null && mGeofence2 != null)
-        {
-            // check if any geofences stored in SharedPrefs have expired - if so remove ALL geofences 
-	    // from SharedPrefs - they will all get created again in onConnected callback method
-	   
-	   Log.d(GeofenceUtils.APPTAG, "onResume: geofence list not empty mGeofence1  expiretime: " + mGeofence1.getExpirationTime() + " nowMillis:" + nowMillis + " expired: " + (mGeofence1.getExpirationTime() < nowMillis)) ;
+      // the list of current geofences is not empty - check if any expired
+      if(mCurrentGeofences != null && mCurrentGeofences.size() > 0 )
+      {
+         // check if any geofences stored in SharedPrefs have expired - remove them  
+	 // from SharedPrefs - the background ones should get created again in onConnected callback method
+	 // the foreground (geofenceConvo) ones will get created again if the convo is not active
 
-	   if(mGeofence1.getExpirationTime() < nowMillis || mGeofence2.getExpirationTime() < nowMillis)
-	   {
-	     Log.d(GeofenceUtils.APPTAG, "Getting rid of expired geofences from prefs") ;
-	     mGeofencePrefs.clearGeofence("1") ;
-	     mGeofencePrefs.clearGeofence("2") ;
-	     mCurrentGeofences.clear() ;
-	   }
-	     
+            HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
+            if(gfIds != null )
+ 	    {
+	      for(Iterator<String> i = gfIds.iterator() ; i.hasNext();)
+	      {
+	         String id = i.next() ;
+	         SimpleGeofence gf = mGeofencePrefs.getGeofence(id) ;
+	         Log.d(GeofenceUtils.APPTAG, "onResume: geofence list not empty:checking gf" + gf.getId() + "  expiretime: " + gf.getExpirationTime() + " nowMillis:" + nowMillis + " expired: " + (gf.getExpirationTime() < nowMillis)) ;
 
-        }
-	// the list of current geofences is empty but we found some in shared prefs
-	if(mCurrentGeofences != null && mCurrentGeofences.size() == 0 && mGeofence1 != null && mGeofence2 != null)
-	{
-	   Log.d(GeofenceUtils.APPTAG, "onResume: geofence list empty mGeofence1  expiretime: " + mGeofence1.getExpirationTime() + " nowMillis:" + nowMillis + " expired: " + (mGeofence1.getExpirationTime() < nowMillis)) ;
-	   
-	   // check expiration time 
-	   if(mGeofence1.getExpirationTime() < nowMillis || mGeofence2.getExpirationTime() < nowMillis)
-	   {
-	      mGeofencePrefs.clearGeofence("1") ;
-	      mGeofencePrefs.clearGeofence("2") ;
-	   }
-	   else
-	   {
-              Log.d(GeofenceUtils.APPTAG, "Existing geofences not expired but list empty so add gfs: ");
-              mCurrentGeofences.add(mGeofence1.toGeofence());
-              mCurrentGeofences.add(mGeofence2.toGeofence());
-	   }
-        }
+	        if(gf.getExpirationTime() < nowMillis)
+	        {
+	          Log.d(GeofenceUtils.APPTAG, "OnResume Removed expired geofence " + gf.getId() ) ;
+		  mGeofencePrefs.clearGeofence(gf.getId()) ;
+		  mCurrentGeofences.remove(gf.toGeofence()) ;
+	        }
 
-   */
+	      }
+	    }
+      }
+
+      // list of current geofences is empty attempt to restore from shared prefs  
+      if(mCurrentGeofences != null && mCurrentGeofences.size() == 0 )
+      {
+    	     Log.d(GeofenceUtils.APPTAG, "onResume mCurrentGeofences.size() == 0") ; 
+             HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
+
+             if(gfIds != null )
+	     {
+	        for(Iterator<String> i = gfIds.iterator() ; i.hasNext();)
+	        {
+	           String id = i.next() ;
+		   Log.d(GeofenceUtils.APPTAG, "onResume restore geofence " + id + " from mGeofencePrefs") ; 
+		   SimpleGeofence gf = mGeofencePrefs.getGeofence(id) ;
+
+	           if(gf.getExpirationTime() < nowMillis)
+		   {
+		      
+		      Log.d(GeofenceUtils.APPTAG, "onResume geofence " + id + " had expired so clear from mGeofencePrefs") ; 
+	              mGeofencePrefs.clearGeofence(id) ;
+
+		   }
+		   else
+		   {
+		      Log.d(GeofenceUtils.APPTAG, "onResume geofence " + id + " not expired so add to mCurrentGeofences") ; 
+		      mCurrentGeofences.add(gf.toGeofence()) ;
+
+		   }
+
+	        }
+	     }
+	     else
+	     {
+                Log.d(GeofenceUtils.APPTAG, "onResume: gfIds null") ;
+
+	     }
+      }
+
+       if(mCurrentGeofences != null && mCurrentGeofences.size() == 0)
+       {
+          mRequestType = GeofenceUtils.REQUEST_TYPE.ADD;
+     
+
+          ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+          NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        
+	  if (networkInfo != null && networkInfo.isConnected()) 
+	  {
+
+         //  new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+	
+        // 	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+
+                   
+             new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+
+             new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
+          } 
+	  else 
+	  {
+             Toast.makeText(this, "No network connection available for game logic",  Toast.LENGTH_SHORT).show();
+	     Log.e(GeofenceUtils.APPTAG, "No network connection available for game logic.");
+
+          }
+
+       }
+
+       mLocationClient.connect();
 }
 
 
@@ -570,7 +751,7 @@ implements
   public void playSound(int sound, float fSpeed, int repeat) 
   {
   
-              Log.d(GeofenceUtils.APPTAG, "playSound:" + sound);
+      Log.d(GeofenceUtils.APPTAG, "playSound:" + sound);
       AudioManager mgr = (AudioManager)getSystemService(AUDIO_SERVICE);
       float streamVolumeCurrent = mgr.getStreamVolume(AudioManager.STREAM_MUSIC);
       float streamVolumeMax = mgr.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
@@ -754,49 +935,21 @@ private boolean servicesConnected() {
     @Override
     public void onConnected(Bundle dataBundle)
     {																								
-       Toast.makeText(this, "WebViewActivity On Connected: " + mUpdatesRequested,Toast.LENGTH_SHORT).show();
+       Toast.makeText(this, "WebViewActivity On Connected called ",Toast.LENGTH_SHORT).show();
        if(mUpdatesRequested)
        {
           startPeriodicUpdates() ;
        }
 
-      	Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected " + mCurrentGeofences ) ;
-       if(mCurrentGeofences != null && mCurrentGeofences.size() == 0)
-       {
-      		mRequestType = GeofenceUtils.REQUEST_TYPE.ADD;
-		Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected") ;
-       		Toast.makeText(this, "WebViewActivity OnConnected"  ,Toast.LENGTH_SHORT).show();
      
+       Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected " + mCurrentGeofences ) ;
+    }
 
-        	ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        	NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        
-		if (networkInfo != null && networkInfo.isConnected()) 
-		{
 
-           	   	//  new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
-	
-           	   // 	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
-
-                   
-           	    	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
-
-           	   	 new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
-        	} 
-		else 
-		{
-          		// TODO Toast
-	   		Log.e(GeofenceUtils.APPTAG, "No network connection available.");
-        	}
-
-        }
-
-      }
-	
      private void addConversationGeofences(String conversationsJSONStr)
      {
 
-        Log.d(GeofenceUtils.APPTAG, "adding Conversations geofences: " + conversationsJSONStr) ;
+        Log.d(GeofenceUtils.APPTAG, "adding Conversations geofences" ) ;
 
 	Convo[] conversations ;
 
@@ -859,7 +1012,7 @@ private boolean servicesConnected() {
 
 	if(backgroundJSONStr == null) return ;
         JSONArray jArray = null ;
-        Log.d(GeofenceUtils.APPTAG, "adding BackgroundGeofences: " + backgroundJSONStr) ;
+        Log.d(GeofenceUtils.APPTAG, "adding BackgroundGeofences")  ;
 
     	try {
 
@@ -1182,6 +1335,7 @@ private boolean servicesConnected() {
                        Toast.makeText(context, "ACTIVE Convo:" + mActiveConvo.getName(), Toast.LENGTH_SHORT).show();
 		       ConvoGeofenceVisitor geofenceVisitor = new ConvoGeofenceVisitor(mActiveConvo, mBackgroundAudioService, mActivity ) ;
 		       geofenceVisitor.visitConvo() ;
+		       mActiveConvoInProgress = true ;
 
 		   }
 
@@ -1189,10 +1343,8 @@ private boolean servicesConnected() {
 	    }
             else if("Exited".equals(transitionType))
             {
-
 		   mActiveConvo = null ; 
-
-
+                   mActiveConvoInProgress = false ;
 	    }
 
 	 }

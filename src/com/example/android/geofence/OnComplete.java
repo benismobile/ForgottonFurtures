@@ -25,6 +25,7 @@ public class OnComplete implements IGeofenceVisitable{
   public void accept(IGeofenceVisitor geofenceVisitor)
   {
     
+     // TODO does this need to use reflection - could just do geofenceVisitor.visit(this.visitable) ??
 
      try
      {
@@ -58,6 +59,11 @@ public class OnComplete implements IGeofenceVisitable{
 
   }
 
+  @Override
+  public String toJSONString()
+  {
+     return this.visitable.toJSONString() ;
 
+  }
 
 }

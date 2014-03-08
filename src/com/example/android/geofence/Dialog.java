@@ -38,6 +38,30 @@ public class Dialog implements IGeofenceVisitable{
     
    }
 
+   public String toJSONString()
+   {
+        
+      StringBuilder sb = new StringBuilder() ;
+      sb.append("[") ;
+
+      for(int i = 0 ; i < this.options.length ; i++ )
+      {
+         Option option = this.options[i] ;
+         
+	 String optionStr = option.toJSONString() ;
+	 sb.append(optionStr) ;
+
+         if (i < options.length -1 ) 
+	 {
+	    sb.append(",") ;
+	 } 
+
+      }
+      sb.append("]") ;
+      return sb.toString() ;
+    
+   }
+
 
 
 }

@@ -19,6 +19,7 @@ package com.example.android.geofence;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import java.util.HashSet ;
 
 /**
  * Storage for geofence values, implemented in SharedPreferences.
@@ -29,6 +30,7 @@ public class SimpleGeofenceStore {
 
     // The SharedPreferences object in which geofences are stored
     private final SharedPreferences mPrefs;
+    private  HashSet<String> geofenceIds ;
 
     // The name of the resulting SharedPreferences
     private static final String SHARED_PREFERENCE_NAME =
@@ -40,6 +42,20 @@ public class SimpleGeofenceStore {
                 context.getSharedPreferences(
                         SHARED_PREFERENCE_NAME,
                         Context.MODE_PRIVATE);
+	this.geofenceIds = new HashSet<String>() ;		
+    }
+
+
+    public HashSet<String> getGeofenceIds()
+    {
+        return (HashSet) this.mPrefs.getStringSet("currentGeofenceIds", new HashSet<String>()) ;
+    }
+
+    public void clearGeofenceIds()
+    {
+       Editor editor = mPrefs.edit();
+       editor.remove("currentGeofenceIds") ;
+       editor.commit() ;
     }
 
     /**
@@ -174,6 +190,9 @@ public class SimpleGeofenceStore {
                 getGeofenceFieldKey(id, GeofenceUtils.KEY_TRANSITION_TYPE),
                 geofence.getTransitionType());
 
+        this.geofenceIds.add(id) ;
+        editor.putStringSet("currentGeofenceIds", this.geofenceIds) ;
+
         // Commit the changes
         editor.commit();
     }
@@ -190,6 +209,12 @@ public class SimpleGeofenceStore {
 	editor.remove(getGeofenceFieldKey(id, "MEDIA_LOOPING"));
 	editor.remove(getGeofenceFieldKey(id, "MEDIA_VARY_VOLUME"));
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_TRANSITION_TYPE));
+	if(this.geofenceIds.contains(id))
+	{
+           this.geofenceIds.remove(id) ;
+           editor.putStringSet("currentGeofenceIds", this.geofenceIds) ;
+
+	}
         editor.commit();
     }
 
