@@ -393,9 +393,6 @@ implements
 
     super.onStop() ;
 
-      // mEditor.remove("mActiveDialog") ;
-      // mEditor.putBoolean("mActiveDialogShowing", false) ;
-      // mEditor.commit() ;
 
   }
   
@@ -596,11 +593,13 @@ implements
       // If the app already has a setting for getting location updates, get it
       if (mPrefs.contains(LocationUtils.KEY_UPDATES_REQUESTED)) 
       {
+         Log.d(GeofenceUtils.APPTAG, "onResume: KEY_UPDATES_REQUESTED") ;
          mUpdatesRequested = mPrefs.getBoolean(LocationUtils.KEY_UPDATES_REQUESTED, false);
       }
       // Otherwise, turn off location updates until requested
       else 
       {
+         Log.d(GeofenceUtils.APPTAG, "onResume: KEY_UPDATES_NOT_REQUESTED") ;
          mEditor.putBoolean(LocationUtils.KEY_UPDATES_REQUESTED, false);
          mEditor.commit();
       }

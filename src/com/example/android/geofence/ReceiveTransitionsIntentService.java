@@ -135,6 +135,9 @@ public class ReceiveTransitionsIntentService extends IntentService {
         Intent notificationIntent =
                 new Intent(getApplicationContext(),com.example.android.location.WebViewActivity.class);
 
+
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP ) ;
+
         // Construct a task stack
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
 

@@ -19,6 +19,8 @@ package com.example.android.geofence;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.util.Log ;
+import java.util.Set ;
 import java.util.HashSet ;
 import java.util.Iterator ;
 
@@ -53,11 +55,24 @@ public class SimpleGeofenceStore {
     {
        // make a defensive copy of geofenceIds HashSet
        HashSet<String> idsCopy = new HashSet<String>() ;
-       if(this.geofenceIds == null) return null ;
-       for(Iterator<String> i = this.geofenceIds.iterator() ; i.hasNext();)
+
+       Set persistedIds = this.mPrefs.getStringSet("currentGeofenceIds", idsCopy) ;
+       if(persistedIds == null || persistedIds.size() < 1) 
        {
-	  idsCopy.add(i.next()) ;
+          Log.d(GeofenceUtils.APPTAG, "SimpleGeofenceStore: getGeofenceIds() could no persisted ids");      
+          return idsCopy ;
        }
+       
+
+
+       Log.d(GeofenceUtils.APPTAG, "SimpleGeofenceStore: getGeofenceIds() copying persisted ids");      
+       for(Iterator<String> i = persistedIds.iterator() ; i.hasNext();)
+       {
+          String id = i.next() ;
+          Log.d(GeofenceUtils.APPTAG, "SimpleGeofenceStore: getGeofenceIds() copying persisted id:" + id);      
+	  idsCopy.add(id) ;
+       }
+
         return idsCopy ;
     }
 
