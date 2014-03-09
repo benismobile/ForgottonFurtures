@@ -356,38 +356,46 @@ implements
 
    @Override
    protected void onDestroy() {
+
+    Log.d(GeofenceUtils.APPTAG, "onDestroy() called" ) ;
     super.onDestroy();
      if (mIsBound) {
         // Detach our existing connection.
         unbindService(mBackgroundAudioServiceConnection);
         mIsBound = false;
     }
-   }
 
-   @Override
-   public void onStop()
-   {
-    super.onStop() ;
-
+   /* 
     HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
     if(gfIds != null )
     {
       for(Iterator<String> i = gfIds.iterator() ; i.hasNext();)
       {
          String id = i.next() ;
+	 
          SimpleGeofence gf = mGeofencePrefs.getGeofence(id) ;
-         Log.d(GeofenceUtils.APPTAG, "onDestroy(): removing geofences" ) ;
+         Log.d(GeofenceUtils.APPTAG, "onDestroy(): removing geofences " + gf.getId() ) ;
 	 mGeofencePrefs.clearGeofence(gf.getId()) ;
 	 mCurrentGeofences.remove(gf.toGeofence()) ;
 
       }
-      mGeofencePrefs.clearGeofenceIds() ;
+       mGeofencePrefs.clearGeofenceIds() ;
 
     }
+    */
 
-      mEditor.remove("mActiveDialog") ;
-      mEditor.putBoolean("mActiveDialogShowing", false) ;
-      mEditor.commit() ;
+   }
+
+   @Override
+   public void onStop()
+   {
+    Log.d(GeofenceUtils.APPTAG, "onStop() called" ) ;
+
+    super.onStop() ;
+
+      // mEditor.remove("mActiveDialog") ;
+      // mEditor.putBoolean("mActiveDialogShowing", false) ;
+      // mEditor.commit() ;
 
   }
   
@@ -652,9 +660,7 @@ implements
       // the list of current geofences is not empty - check if any expired
       if(mCurrentGeofences != null && mCurrentGeofences.size() > 0 )
       {
-         // check if any geofences stored in SharedPrefs have expired - remove them  
-	 // from SharedPrefs - the background ones should get created again in onConnected callback method
-	 // the foreground (geofenceConvo) ones will get created again if the convo is not active
+    	  Log.d(GeofenceUtils.APPTAG, "onResume: mCurrentGeofences.size() > 0") ; 
 
             HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
             if(gfIds != null )
@@ -674,6 +680,11 @@ implements
 
 	      }
 	    }
+	    else
+	    {
+                Log.e(GeofenceUtils.APPTAG, "onResume: mCurrentGeofences.size() > 0 BUT no geofenceIds in mGeofencePrefs!") ;
+
+	    }
       }
 
       // list of current geofences is empty attempt to restore from shared prefs  
@@ -682,7 +693,7 @@ implements
     	     Log.d(GeofenceUtils.APPTAG, "onResume mCurrentGeofences.size() == 0") ; 
              HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
 
-             if(gfIds != null )
+             if(gfIds != null && gfIds.size() > 0 )
 	     {
 	        for(Iterator<String> i = gfIds.iterator() ; i.hasNext();)
 	        {
@@ -705,16 +716,17 @@ implements
 		   }
 
 	        }
-	     }
+	     } 
 	     else
 	     {
-                Log.d(GeofenceUtils.APPTAG, "onResume: gfIds null") ;
+                Log.d(GeofenceUtils.APPTAG, "onResume: gfIds empty") ;
 
 	     }
       }
 
        if(mCurrentGeofences != null && mCurrentGeofences.size() == 0)
        {
+    	  Log.d(GeofenceUtils.APPTAG, "onResume mCurrentGeofences.size() STILL == 0 OBTAINING GEOFENCES" ) ; 
           mRequestType = GeofenceUtils.REQUEST_TYPE.ADD;
      
 
@@ -739,6 +751,12 @@ implements
 	     Log.e(GeofenceUtils.APPTAG, "No network connection available for game logic.");
 
           }
+
+       }
+
+       if(mCurrentGeofences == null)
+       {
+          Log.e(GeofenceUtils.APPTAG, "onResume: mCurrentGeofences == null " ) ;
 
        }
 
@@ -863,6 +881,13 @@ public void framemarkers()
 
 		  //  get SimpleGeofence object and lon/lat 
                   SimpleGeofence sgf = mGeofencePrefs.getGeofence(trackID);
+		  if(sgf == null)
+		  {
+		     Log.e(GeofenceUtils.APPTAG, "Could not retrieve geofence from mGeofencePrefs id: " + trackID ) ;      
+		     return ; 
+
+		  }
+
 		  boolean varyVolume = sgf.getVaryVolume() ;
 
 

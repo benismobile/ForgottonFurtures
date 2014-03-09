@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import java.util.HashSet ;
+import java.util.Iterator ;
 
 /**
  * Storage for geofence values, implemented in SharedPreferences.
@@ -31,6 +32,7 @@ public class SimpleGeofenceStore {
     // The SharedPreferences object in which geofences are stored
     private final SharedPreferences mPrefs;
     private  HashSet<String> geofenceIds ;
+    private Editor editor ;
 
     // The name of the resulting SharedPreferences
     private static final String SHARED_PREFERENCE_NAME =
@@ -42,18 +44,25 @@ public class SimpleGeofenceStore {
                 context.getSharedPreferences(
                         SHARED_PREFERENCE_NAME,
                         Context.MODE_PRIVATE);
-	this.geofenceIds = new HashSet<String>() ;		
+	this.geofenceIds = new HashSet<String>() ;
+	this.editor = this.mPrefs.edit() ;
     }
 
 
     public HashSet<String> getGeofenceIds()
     {
-        return (HashSet) this.mPrefs.getStringSet("currentGeofenceIds", new HashSet<String>()) ;
+       // make a defensive copy of geofenceIds HashSet
+       HashSet<String> idsCopy = new HashSet<String>() ;
+       if(this.geofenceIds == null) return null ;
+       for(Iterator<String> i = this.geofenceIds.iterator() ; i.hasNext();)
+       {
+	  idsCopy.add(i.next()) ;
+       }
+        return idsCopy ;
     }
 
     public void clearGeofenceIds()
     {
-       Editor editor = mPrefs.edit();
        editor.remove("currentGeofenceIds") ;
        editor.commit() ;
     }
@@ -158,7 +167,7 @@ public class SimpleGeofenceStore {
          * things, SharedPreferences ensures that updates are atomic
          * and non-concurrent
          */
-        Editor editor = mPrefs.edit();
+        // Editor editor = mPrefs.edit();
 
         // Write the Geofence values to SharedPreferences
         editor.putFloat(
@@ -200,7 +209,7 @@ public class SimpleGeofenceStore {
     public void clearGeofence(String id) {
 
         // Remove a flattened geofence object from storage by removing all of its keys
-        Editor editor = mPrefs.edit();
+        // Editor editor = mPrefs.edit();
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_LATITUDE));
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_LONGITUDE));
         editor.remove(getGeofenceFieldKey(id, GeofenceUtils.KEY_RADIUS));
