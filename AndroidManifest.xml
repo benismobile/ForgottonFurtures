@@ -47,7 +47,7 @@
         android:description="@string/app_description">
         
 
-<activity android:name="com.example.android.location.WebViewActivity" android:label="@string/MapView" android:theme="@style/Theme.AppCompat.Light" android:screenOrientation="portrait" launchMode="singleTask">
+<activity android:name="com.example.android.location.WebViewActivity" android:label="@string/MapView" android:theme="@style/Theme.AppCompat.Light" android:screenOrientation="portrait" launchMode="singleTop">
 <intent-filter>
   <action android:name="android.intent.action.MAIN" />
   <category android:name="android.intent.category.LAUNCHER" />
