@@ -16,10 +16,10 @@
 -->
 <resources>
     <!-- Application identifiers -->
-    <string name="app_name">Forgotton Futures</string>
-    <string name="app_tag">Forgottin Futures</string>
+    <string name="app_name">Forgotten Futures</string>
+    <string name="app_tag">Forgotten Futures</string>
     <string name="app_description">
-       Forgotton Futures concept App for Threshold Festival 2014 
+       Forgotten Futures concept App for Threshold Festival 2014 
     </string>
 
     <!-- User interface labels and strings -->
@@ -39,7 +39,7 @@
     <string name="viewMap">View Map</string>
 
     <!-- Activity Title -->
-    <string name="MapView">Forgotton Futures</string>
+    <string name="MapView">Forgotten Futures</string>
 
 
 

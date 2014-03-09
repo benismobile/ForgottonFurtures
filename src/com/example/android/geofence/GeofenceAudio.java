@@ -1,5 +1,9 @@
 package com.example.android.geofence ;
 
+import org.json.JSONObject ;
+import org.json.JSONException ;
+import org.json.JSONArray ;
+
 
 
 public class GeofenceAudio implements IGeofenceVisitable
@@ -91,6 +95,36 @@ public class GeofenceAudio implements IGeofenceVisitable
      {
         return requiredFields ;
      }
+
+   }
+
+   @Override
+   public String toJSONString()
+   {
+       StringBuilder sb = new StringBuilder() ;
+       JSONObject gfAudioObj = new JSONObject() ;
+       try
+       {
+         gfAudioObj.put("id", this.getId()) ;
+         gfAudioObj.put("lat", this.getLatitude()) ;
+         gfAudioObj.put("lon", this.getLongitude()) ;
+         gfAudioObj.put("radius", this.getRadius()) ;
+         gfAudioObj.put("duration", this.getDuration()) ;
+         gfAudioObj.put("transitions", this.getTransitions()) ;
+	 gfAudioObj.put("track", this.getTrack()) ;
+
+       }catch(JSONException e)
+       {
+	   return "{" + "\"err\":" + "\"" + e.getMessage() + "\"" + "}" ;
+       }
+
+       sb.append(gfAudioObj.toString() ) ;
+       if(hasOnComplete())
+       {
+          sb.append(this.getOnComplete().toJSONString()) ;
+       }
+
+       return sb.toString() ;
 
    }
 
