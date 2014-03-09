@@ -18,6 +18,8 @@ import com.example.android.geofence.GeofenceUtils ;
 
 import java.lang.CharSequence ;
 import java.util.HashMap ;
+import java.util.Iterator ;
+
 
 public class BackgroundAudioService extends Service implements MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
     
@@ -30,6 +32,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     private String track ;
     private MediaPlayer currentForegroundPlayer ; 
     private HashMap<String, MediaPlayer> playing = new HashMap<String, MediaPlayer>() ;
+    private boolean foregroundPlaying ;
 
     @Override 
     public void onCreate()
@@ -153,14 +156,20 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 
 	if(! aMediaPlayer.isPlaying())
 	{
-	  
 	   aMediaPlayer.start() ;
 	   this.currentForegroundPlayer = aMediaPlayer ; // keep a reference to stop over eager Garbage Collection
-
+           this.foregroundPlaying = true ;
+           if(playing != null && playing.size() > 0)
+           {
+              for(Iterator<MediaPlayer> i = playing.values().iterator() ; i.hasNext(); )
+              {
+                 MediaPlayer player = i.next() ;
+                 player.setVolume(0.1f, 0.1f) ;
+              }
+           }
 	}
 
     }
-
 
 
 
@@ -183,14 +192,31 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
 
     public void changeVolume(String track, float volume)
     {
+  
+         
          MediaPlayer trackPlayer = playing.get(track) ;
 	 
-	 if(trackPlayer != null && trackPlayer.isPlaying())
+	 if(trackPlayer != null && trackPlayer.isPlaying() )
 	 {
-	     trackPlayer.setVolume(volume, volume) ;
 
+             if(!foregroundPlaying)
+             {
+	        trackPlayer.setVolume(volume, volume) ;
+             }
+             else
+             {
+                trackPlayer.setVolume(0.1f, 0.1f) ;
+             }
 	 }
 
+    }
+
+
+    public void foregroundStopped()
+    {
+         this.currentForegroundPlayer.release() ;
+         this.currentForegroundPlayer = null ; 
+         this.foregroundPlaying = false ;
     }
 
 

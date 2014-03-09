@@ -17,6 +17,7 @@ import android.view.MenuItem ;
 import android.view.MenuInflater ;
 import android.widget.Toast ;
 import android.text.TextUtils ;
+import android.app.NotificationManager ;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -391,29 +392,12 @@ implements
    {
     Log.d(GeofenceUtils.APPTAG, "onStop() called" ) ;
 
+  //      stopPeriodicUpdates();
     super.onStop() ;
 
 
   }
   
-/*
-   @Override
-   public void onStop() {
-
-     // If the client is connected
-  //   if (mLocationClient.isConnected())
-  //   {
-  //      stopPeriodicUpdates();
-  //   }
-
-     // After disconnect() is called, the client is considered "dead".
-//      mLocationClient.disconnect();
-     
-     super.onStop();
-   } // end onStop()
-
-*/
-
     @Override
     public void onPause() {
 
@@ -496,7 +480,7 @@ implements
 
    public void onRestoreInstanceState(Bundle savedInstanceState) {
     	super.onRestoreInstanceState(savedInstanceState);
-	restoreInstanceState(savedInstanceState) ;
+	// restoreInstanceState(savedInstanceState) ;
    } 
 
    private void restoreInstanceState(Bundle savedInstanceState)
@@ -629,7 +613,7 @@ implements
 
          }catch(ParseException e)
 	   {
-              Log.w(GeofenceUtils.APPTAG, "restoreInstanceState: Could not parse mActiveDialog from string" + mActiveDialogStr ) ;
+              Log.w(GeofenceUtils.APPTAG, "onResume: Could not parse mActiveDialog from string" + mActiveDialogStr ) ;
 	   }
       }
       else
@@ -737,10 +721,10 @@ implements
 
          //  new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 	
-        // 	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+         	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
 
                    
-             new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+        //     new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 
              new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
           } 
@@ -758,6 +742,9 @@ implements
           Log.e(GeofenceUtils.APPTAG, "onResume: mCurrentGeofences == null " ) ;
 
        }
+    
+       NotificationManager notificationManager = (NotificationManager)getSystemService(this.NOTIFICATION_SERVICE);
+       notificationManager.cancelAll();
 
        mLocationClient.connect();
 }
@@ -897,7 +884,7 @@ public void framemarkers()
 		     if(varyVolume)
 		     {
 	               mBackgroundAudioService.changeVolume(trackID, volume) ;
-		       // Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volume);
+		       Log.d(GeofenceUtils.APPTAG, "change volume for track " + trackID + " to:" + volume);
 		     }
 	          }
 
@@ -1401,8 +1388,6 @@ private boolean servicesConnected() {
 		  }
      	       }
 
-               //   TODO this goes into Visitor GeofenceDialogFragment alert = new GeofenceDialogFragment();
-	       //   alert.show(getFragmentManager(), "GeofenceEventFragment") ;
 	    }
             else if("Exited".equals(transitionType))
 	    {
