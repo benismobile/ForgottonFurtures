@@ -164,7 +164,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
               for(Iterator<MediaPlayer> i = playing.values().iterator() ; i.hasNext(); )
               {
                  MediaPlayer player = i.next() ;
-                 player.setVolume(0.1f, 0.1f) ;
+                 player.setVolume(0.01f, 0.01f) ;
+                 Log.d(GeofenceUtils.APPTAG, "ducked player:" + player) ;
               }
            }
 	}
@@ -205,7 +206,8 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
              }
              else
              {
-                trackPlayer.setVolume(0.1f, 0.1f) ;
+                trackPlayer.setVolume(0.01f, 0.01f) ;
+                Log.d(GeofenceUtils.APPTAG, "BackgroundAudioPlayer: change volume ducking background track" ) ; 
              }
 	 }
 

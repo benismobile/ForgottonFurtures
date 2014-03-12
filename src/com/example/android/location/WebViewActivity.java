@@ -684,10 +684,10 @@ implements
 		   Log.d(GeofenceUtils.APPTAG, "onResume restore geofence " + id + " from mGeofencePrefs") ; 
 		   SimpleGeofence gf = mGeofencePrefs.getGeofence(id) ;
 
-	           if(gf.getExpirationTime() < nowMillis)
+	           if(gf == null || gf.getExpirationTime() < nowMillis)
 		   {
 		      
-		      Log.d(GeofenceUtils.APPTAG, "onResume geofence " + id + " had expired so clear from mGeofencePrefs") ; 
+		      Log.d(GeofenceUtils.APPTAG, "onResume geofence " + id + " had expired (or is null) so clear from mGeofencePrefs") ; 
 	              mGeofencePrefs.clearGeofence(id) ;
 
 		   }
@@ -971,7 +971,7 @@ private boolean servicesConnected() {
 
 	}catch (ParseException e)
 	 {
-	   Log.e(GeofenceUtils.APPTAG, e.getMessage()) ;
+	   Log.e(GeofenceUtils.APPTAG, "Could not parse convoArray from String: " + conversationsJSONStr + " Caused by: " +  e.getMessage()) ;
            Toast.makeText(this, "Could not parse conversation file",  Toast.LENGTH_LONG).show();
            return ; 
 	 }
