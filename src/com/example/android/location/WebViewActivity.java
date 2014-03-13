@@ -4,6 +4,8 @@ import android.app.Activity ;
 import android.os.Bundle ;
 import android.content.Intent ;
 import android.widget.EditText ;
+import android.view.ViewConfiguration ;
+
 import android.view.View;
 import android.webkit.WebView ;
 import android.annotation.SuppressLint ;
@@ -104,6 +106,7 @@ implements
 
 {
    private boolean mIsInFront ;
+   private int mActiveMap = 0 ;
    private LocationClient mLocationClient;
    private LocationRequest mLocationRequest;
    boolean mUpdatesRequested = false;
@@ -273,7 +276,7 @@ implements
     // WHATEVER YOU DO: DONT USE setAllowFileAccess* ON GINGERBREAB - Causes nasty crach
     // BUT needed to get the local gpx loading to work
      webview.addJavascriptInterface(new WebAppInterface(this),"Android");
-     webview.loadUrl("file:///android_asset/html/threshold.html");
+     webview.loadUrl("file:///android_asset/html/threshold2.html");
 
     mLocationClient = new LocationClient(this, this, this);
     mLocationRequest = LocationRequest.create();
@@ -343,9 +346,25 @@ implements
      	Intent startAudioIntent = new Intent(this, com.example.android.location.BackgroundAudioService.class);
         bindService(startAudioIntent, mBackgroundAudioServiceConnection, Context.BIND_AUTO_CREATE);
         restoreInstanceState(savedInstanceState) ;
-
+  
+      getOverflowMenu() ;
 
    } // ends onCreate
+
+
+   private void getOverflowMenu() {
+
+     try {
+        ViewConfiguration config = ViewConfiguration.get(this);
+        java.lang.reflect.Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+        if(menuKeyField != null) {
+            menuKeyField.setAccessible(true);
+            menuKeyField.setBoolean(config, false);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+  }
 
    @Override
    public void onPrepared(MediaPlayer player)
@@ -365,6 +384,9 @@ implements
         unbindService(mBackgroundAudioServiceConnection);
         mIsBound = false;
     }
+
+    stopUpdates();
+
 
    /* 
     HashSet<String> gfIds = mGeofencePrefs.getGeofenceIds() ;
@@ -392,7 +414,6 @@ implements
    {
     Log.d(GeofenceUtils.APPTAG, "onStop() called" ) ;
 
-  //      stopPeriodicUpdates();
     super.onStop() ;
 
 
@@ -719,14 +740,15 @@ implements
 	  if (networkInfo != null && networkInfo.isConnected()) 
 	  {
 
-         //  new DownloadJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 	
          	 new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/backgroundsdev.json");
+         	 new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
 
                    
-        //     new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+         //  new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 
-             new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
+           // new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/conversations.json");
+
           } 
 	  else 
 	  {
@@ -785,19 +807,35 @@ public boolean onOptionsItemSelected(MenuItem item) {
             return true;
 	case R.id.framemarkers:
 	    framemarkers();
+        case R.id.switch_map:
+	    switchMap() ;
         default:
             return super.onOptionsItemSelected(item);
     }
 }
 
 
+public void switchMap()
+{
+     if(mActiveMap == 0)
+     {
+        webview.loadUrl("file:///android_asset/html/threshold.html");
+        Toast.makeText(this,"Game Map",Toast.LENGTH_SHORT).show();
+        mActiveMap = 1 ;
+     }
+     else if(mActiveMap == 1)
+     {
+        webview.loadUrl("file:///android_asset/html/threshold2.html");
+        Toast.makeText(this,"Venue Map",Toast.LENGTH_SHORT).show();
+        mActiveMap = 0 ; 
+     }
 
+}
 
 public void getLocation()
 {
 
-// Toast.makeText(this,"Android.getLocation called",Toast.LENGTH_SHORT).show();
-webview.loadUrl("javascript:getLocation();");
+    webview.loadUrl("javascript:getLocation();");
 
 }
 
@@ -947,10 +985,7 @@ private boolean servicesConnected() {
     public void onConnected(Bundle dataBundle)
     {																								
        Toast.makeText(this, "WebViewActivity On Connected called ",Toast.LENGTH_SHORT).show();
-       if(mUpdatesRequested)
-       {
-          startPeriodicUpdates() ;
-       }
+          startUpdates() ;
 
      
        Log.d(GeofenceUtils.APPTAG, "WebViewActivity:onConnected " + mCurrentGeofences ) ;
