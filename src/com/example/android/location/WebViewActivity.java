@@ -215,7 +215,7 @@ implements
          
          Log.d(GeofenceUtils.APPTAG, "WebViewActivity: accept visitor: show Dialog:" + mActiveDialog ) ;
          GeofenceDialogFragment dialog =  GeofenceDialogFragment.newInstance(mActiveDialog) ; 
-         dialog.show(getFragmentManager(), "GeofenceEventFragment") ;
+         dialog.show(getSupportFragmentManager(), "GeofenceEventFragment") ;
          mActiveDialogFragment = dialog ;
 	 mActiveDialogShowing = true ;
 	 mEditor.putBoolean("mActiveDialogShowing", true ) ;
@@ -347,7 +347,7 @@ implements
         bindService(startAudioIntent, mBackgroundAudioServiceConnection, Context.BIND_AUTO_CREATE);
         restoreInstanceState(savedInstanceState) ;
   
-      getOverflowMenu() ;
+      // getOverflowMenu() ;
 
    } // ends onCreate
 
@@ -650,7 +650,7 @@ implements
          GeofenceDialogFragment dialog =  GeofenceDialogFragment.newInstance(mActiveDialog) ; 
          if(! mActiveDialogShowing)
 	 {
-	    dialog.show(getFragmentManager(), "GeofenceEventFragment") ;
+	    dialog.show(getSupportFragmentManager(), "GeofenceEventFragment") ;
             mActiveDialogFragment = dialog ;
 	 }
 
@@ -745,9 +745,9 @@ implements
          	 new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
 
                    
-         //  new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+        //   new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 
-           // new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/conversations.json");
+        //    new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/conversations.json");
 
           } 
 	  else 
