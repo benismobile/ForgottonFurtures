@@ -28,7 +28,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     private MediaPlayer mMediaPlayer = null;
     private NotificationManager mNM;
     private Notification notification ;
-    private final IBinder mBinder = new LocalBinder();
+    public final IBinder mBinder = new LocalBinder();
     private String track ;
     private MediaPlayer currentForegroundPlayer ; 
     private HashMap<String, MediaPlayer> playing = new HashMap<String, MediaPlayer>() ;
@@ -236,7 +236,7 @@ public class BackgroundAudioService extends Service implements MediaPlayer.OnErr
     }
 
     public class LocalBinder extends Binder {
-        BackgroundAudioService getService() 
+        public BackgroundAudioService getService() 
 	{
             return BackgroundAudioService.this;
         }

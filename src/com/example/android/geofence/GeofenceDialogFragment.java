@@ -50,7 +50,7 @@ public class GeofenceDialogFragment extends DialogFragment {
         CharSequence[] optionArray = getArguments().getCharSequenceArray("options") ;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("Forgotten Futrues") 
+        builder.setTitle("Forgotten Futures") 
 	       .setSingleChoiceItems (optionArray, -1, new DialogInterface.OnClickListener(){
 	           @Override
 		   public void onClick(DialogInterface dialog, int which)

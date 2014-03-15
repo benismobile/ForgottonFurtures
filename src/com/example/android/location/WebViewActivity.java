@@ -535,7 +535,7 @@ implements
        }
 
        */
-
+/*
        // TODO get mConvos from getJSONString and parse from JSON Str using getStingArray
         ArrayList<String> convoStringArray = savedInstanceState.getStringArrayList("mConvos");
         if(convoStringArray != null && convoStringArray.size() > 0  )
@@ -583,7 +583,7 @@ implements
 	{
            Log.w(GeofenceUtils.APPTAG, "restoreInstanceState: Could not parse mActiveDialog from string" + mActiveConvoStr ) ;
 	}
-
+*/
    }
 
    @Override
@@ -745,7 +745,7 @@ implements
          	 new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/58768795/ForgottonFutures/conversations.json");
 
                    
-        //   new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
+         //  new DownloadBackgroundAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/kai_backgrounds.json");
 
         //    new DownloadConversationsAudioJSONTask().execute("https://dl.dropboxusercontent.com/u/26331961/conversations.json");
 
@@ -841,7 +841,8 @@ public void getLocation()
 
 public void framemarkers()
 {
-
+ 
+  Log.d(GeofenceUtils.APPTAG, "Framemarkers called" ) ;
   Toast.makeText(this,"Framemarkers called",Toast.LENGTH_SHORT).show();
   Intent intent = new Intent(this, com.example.android.framemarkers.FrameMarkers.class);
 
