@@ -93,7 +93,7 @@ import android.os.AsyncTask ;
 import java.io.IOException ;
 import java.text.ParseException ;
 import java.util.Iterator ;
-
+import android.webkit.WebViewClient ;
 
 public class WebViewActivity extends ActionBarActivity
 implements 
@@ -107,6 +107,7 @@ implements
 {
    private boolean mIsInFront ;
    private int mActiveMap = 0 ;
+   private boolean mAchievementsShowing = false ;
    private LocationClient mLocationClient;
    private LocationRequest mLocationRequest;
    boolean mUpdatesRequested = false;
@@ -768,6 +769,23 @@ implements
        NotificationManager notificationManager = (NotificationManager)getSystemService(this.NOTIFICATION_SERVICE);
        notificationManager.cancelAll();
 
+
+       Intent callingIntent = this.getIntent() ;
+       String bird = callingIntent.getStringExtra("bird");
+       Log.d(GeofenceUtils.APPTAG, "get string extra bird" + bird + " from intent " + callingIntent) ;
+       if(bird != null && !"-1".equals(bird))
+       {
+          Log.d(GeofenceUtils.APPTAG, "recovered bird" ) ;
+          callingIntent.putExtra("bird","-1" );	
+          int countBirds = mPrefs.getInt("countbirds", 0 ) ;
+          countBirds++ ;
+
+          Log.d(GeofenceUtils.APPTAG, "countBirds:" + countBirds ) ;
+          mEditor.putInt("countbirds", countBirds) ;
+          mEditor.commit() ;
+          onBirdCaptured() ; 
+       }
+
        mLocationClient.connect();
 }
 
@@ -807,19 +825,106 @@ public boolean onOptionsItemSelected(MenuItem item) {
             return true;
 	case R.id.framemarkers:
 	    framemarkers();
+            return true ;
         case R.id.switch_map:
 	    switchMap() ;
+            return true ;
+        case R.id.toggle_achievements:
+            toggleAchievements() ;
+            return true ;
         default:
             return super.onOptionsItemSelected(item);
     }
 }
 
+public void toggleAchievements()
+{
+   if(mAchievementsShowing && mActiveMap == 1)
+   {
+      webview.loadUrl("javascript:removeLegend();");
+      mAchievementsShowing = false ;
+      return ;
+   }
+   
+   if(!mAchievementsShowing && mActiveMap == 1)
+   {
+      webview.loadUrl("javascript:showLegend();");
+      mAchievementsShowing = true ;
+      int countBirds = mPrefs.getInt("countbirds", 0 ) ;
+      Log.d(GeofenceUtils.APPTAG, "toggleAchievements countBirds:" + countBirds) ;
+      for(int i = 0 ; i < countBirds ; i++ )
+      {
+         webview.loadUrl("javascript:addBird();");
+      }
+      return ;
+   }
+
+   if(!mAchievementsShowing && mActiveMap == 0)
+   {
+           webview.setWebViewClient(new WebViewClient() {
+
+           public void onPageFinished(WebView view, String url) {
+                  view.loadUrl("javascript:showLegend();");
+                  mAchievementsShowing = true ;
+                  int countBirds = mPrefs.getInt("countbirds", 0 ) ;
+                  Log.d(GeofenceUtils.APPTAG, "onBirdCaptured.WebViewClient countBirds:" + countBirds) ;
+                  for(int i = 0 ; i < countBirds ; i++ )
+                  {
+                      view.loadUrl("javascript:addBird();");
+                  }
+
+            }
+           });
+      switchMap() ;
+      return ;
+   }
+
+   if(mAchievementsShowing && mActiveMap == 0)
+   {
+      return ;
+   }
+}
+
+
+public void onBirdCaptured()
+{
+     Toast.makeText(this,"Congratulations you captured a bird for Robot Bob",Toast.LENGTH_SHORT).show();
+      
+      if(mActiveMap == 0 )
+      { 
+           webview.setWebViewClient(new WebViewClient() {
+
+           public void onPageFinished(WebView view, String url) {
+                  view.loadUrl("javascript:showLegend();");
+                  mAchievementsShowing = true ;
+                  int countBirds = mPrefs.getInt("countbirds", 0 ) ;
+                  Log.d(GeofenceUtils.APPTAG, "onBirdCaptured.WebViewClient countBirds:" + countBirds) ;
+                  for(int i = 0 ; i < countBirds ; i++ )
+                  {
+                      view.loadUrl("javascript:addBird();");
+                  }
+
+            }
+           });
+           switchMap() ;
+           return ;
+      }
+      webview.loadUrl("javascript:showLegend();");
+      mAchievementsShowing = true ;
+      int countBirds = mPrefs.getInt("countbirds", 0 ) ;
+      Log.d(GeofenceUtils.APPTAG, "onBirdCaptured countBirds:" + countBirds) ;
+      for(int i = 0 ; i < countBirds ; i++ )
+      {
+         webview.loadUrl("javascript:addBird();");
+      }
+
+}
 
 public void switchMap()
 {
      if(mActiveMap == 0)
      {
-        webview.loadUrl("file:///android_asset/html/threshold.html");
+        webview.loadUrl("file:///android_asset/html/threshold3.html");
         Toast.makeText(this,"Game Map",Toast.LENGTH_SHORT).show();
         mActiveMap = 1 ;
      }

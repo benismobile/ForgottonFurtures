@@ -10,6 +10,10 @@
        android:icon="@drawable/ic_action_camera"
           android:title="@string/framemarkers" 
            yourapp:showAsAction="ifRoom" />
+  <item android:id="@+id/toggle_achievements"
+       android:icon="@drawable/ic_action_important"
+          android:title="Show/Hide Achievements"
+          yourapp:showAsAction="ifRoom"  />  
   <item android:id="@+id/get_location"
        android:icon="@drawable/ic_action_location_searching"
           android:title="@string/get_location"

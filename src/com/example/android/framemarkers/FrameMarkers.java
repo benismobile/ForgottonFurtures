@@ -194,7 +194,6 @@ public class FrameMarkers extends Activity implements SampleApplicationControl,
     public void setDetected(int detected)
     {
         this.detected = detected ;
-        showToast("Touch to capture bird") ;
     }    
     // We want to load specific textures from the APK, which we will later use
     // for rendering.
@@ -240,6 +239,8 @@ public class FrameMarkers extends Activity implements SampleApplicationControl,
             mGlView.setVisibility(View.VISIBLE);
             mGlView.onResume();
         }
+
+        showToastLong("Find bird and then touch screen to capture it") ;
         
     }
     
@@ -321,15 +322,23 @@ public class FrameMarkers extends Activity implements SampleApplicationControl,
             return true;
         if(detected >= 0 ) 
         { 
-            showToast("Congratulations! You captured a bird!"  ) ;
 
-            detected = -1 ;
             // String track = geofenceAudio.getTrackFromId(detected) ;
             if(this.backgroundAudioService != null) 
             {
               // TODO implement getTrackFromId
                this.backgroundAudioService.playForeground("convo1ablock4", this, this) ;
+
+
+               Intent intent = new Intent(this, com.example.android.location.WebViewActivity.class);
+ 	       intent.putExtra("bird",""+detected );
+
+               detected = -1 ;
+               startActivity(intent);
+
             }
+
+
 	    else
 	    {
  	      Log.d(LOGTAG, "can't play track no background audio service" ) ;
@@ -723,6 +732,10 @@ public class FrameMarkers extends Activity implements SampleApplicationControl,
     }
     
     
+    public void showToastLong(String text)
+    {
+        Toast.makeText(this, text, Toast.LENGTH_LONG).show();
+    }
     public void showToast(String text)
     {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
